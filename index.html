@@ -6,6 +6,9 @@
     <title>SMM Дашборд | Аналитика</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         .glass-header { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
@@ -36,8 +39,8 @@
         
         <header class="glass-header sticky top-0 z-40 px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">SMM Аналитика</h1>
-            </div>
+    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">SMM Аналитика: <span id="current-month-label" class="text-blue-600">...</span></h1>
+</div>
             
             <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
                 <div class="bg-slate-200/50 p-1 rounded-xl flex text-sm font-semibold w-full sm:w-auto overflow-x-auto">
@@ -51,14 +54,11 @@
             <div class="max-w-7xl mx-auto p-4 sm:p-6">
                 
                 <div class="flex flex-col sm:flex-row gap-4 mb-6 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                    
                     <div class="flex gap-4 flex-1">
-                        <div>
-                            <span class="filter-label">Начало периода</span>
-                            <input type="date" id="current-date-start" class="filter-input">
-                        </div>
-                        <div>
-                            <span class="filter-label">Конец периода</span>
-                            <input type="date" id="current-date-end" class="filter-input">
+                        <div class="w-full sm:w-auto">
+                            <span class="filter-label">Период анализа</span>
+                            <input type="text" id="current-date-range" class="filter-input w-full sm:w-64" placeholder="Выберите диапазон дат...">
                         </div>
                     </div>
                     <div>
@@ -170,59 +170,76 @@
         };
 
         // --- УСТАНОВКА ДАТ ПО УМОЛЧАНИЮ ---
-        function setInitialDates() {
-            const today = new Date();
-            const year = today.getFullYear();
-            // Месяцы в JS начинаются с 0, форматируем с ведущим нулем
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            
-            // Первый и последний день месяца
-            const firstDay = `${year}-${month}-01`;
-            const lastDay = new Date(year, today.getMonth() + 1, 0).getDate();
-            const lastDayFormatted = `${year}-${month}-${lastDay}`;
+        // Патч 4: Обновление JS логики внутри <script type="module">
 
-            // Заполняем контроллеры "Текущего месяца"
-            document.getElementById('current-date-start').value = firstDay;
-            document.getElementById('current-date-end').value = lastDayFormatted;
+let rawData = null; 
+let datePicker = null; // Глобальная переменная для календаря
 
-            // Заполняем контроллеры "Общей динамики" (например, от начала года до текущего месяца)
-            document.getElementById('global-month-start').value = `${year}-01`;
-            document.getElementById('global-month-end').value = `${year}-${month}`;
-        }
+// Функция для перевода первой буквы месяца в верхний регистр
+function updateMonthLabel(date) {
+    const monthName = date.toLocaleString('ru-RU', { month: 'long' });
+    const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+    document.getElementById('current-month-label').innerText = capitalizedMonth;
+}
 
-        // --- АВТОРИЗАЦИЯ И СБОР ДАННЫХ ---
-        document.getElementById('login-btn').addEventListener('click', () => signInWithPopup(auth, provider));
+// Измененная функция инициализации дат и календаря
+function setInitialDates() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    
+    const firstDay = `${year}-${month}-01`;
+    const lastDay = new Date(year, today.getMonth() + 1, 0).getDate();
+    const lastDayFormatted = `${year}-${month}-${lastDay}`;
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('dashboard-screen').classList.remove('hidden');
-                
-                setInitialDates(); // Инициализируем контроллеры
-
-                const dbRef = ref(db, 'kpi_project/inputState');
-                onValue(dbRef, (snapshot) => {
-                    rawData = snapshot.val();
-                    if(rawData) {
-                        // Вызываем расчеты после успешного получения базы
-                        processCurrentMonthData();
-                        processGlobalData();
-                    }
-                }, (error) => {
-                    alert("Доступ запрещен. Проверьте права в Firebase.");
-                });
+    // Инициализация календаря-диапазона Flatpickr
+    datePicker = flatpickr("#current-date-range", {
+        mode: "range",
+        dateFormat: "Y-m-d",
+        defaultDate: [firstDay, lastDayFormatted],
+        locale: "ru",
+        onChange: function(selectedDates) {
+            // Как только выбраны обе даты (начало и конец)
+            if (selectedDates.length === 2) {
+                // Динамически меняем название месяца по первой выбранной дате
+                updateMonthLabel(selectedDates[0]);
+                processCurrentMonthData();
             }
-        });
+        }
+    });
 
-        // --- ОБРАБОТЧИКИ ИЗМЕНЕНИЙ В ФИЛЬТРАХ ---
-        // Когда пользователь меняет даты или канал, вызываем функции перерасчета
-        document.getElementById('current-date-start').addEventListener('change', processCurrentMonthData);
-        document.getElementById('current-date-end').addEventListener('change', processCurrentMonthData);
-        document.getElementById('current-channel').addEventListener('change', processCurrentMonthData);
+    // Устанавливаем начальное название месяца при загрузке
+    updateMonthLabel(today);
 
-        document.getElementById('global-month-start').addEventListener('change', processGlobalData);
-        document.getElementById('global-month-end').addEventListener('change', processGlobalData);
-        document.getElementById('global-channel').addEventListener('change', processGlobalData);
+    // Заполняем контроллеры "Общей динамики"
+    document.getElementById('global-month-start').value = `${year}-01`;
+    document.getElementById('global-month-end').value = `${year}-${month}`;
+}
+
+// Измененная функция сбора данных для текущего месяца
+function processCurrentMonthData() {
+    if (!rawData || !datePicker) return;
+    
+    const selectedDates = datePicker.selectedDates;
+    if (selectedDates.length < 2) return; // Ждем, пока пользователь выберет обе даты
+
+    // Форматируем даты в строку YYYY-MM-DD для дальнейшей фильтрации данных
+    const startDate = selectedDates[0].toISOString().split('T')[0];
+    const endDate = selectedDates[1].toISOString().split('T')[0];
+    const channel = document.getElementById('current-channel').value;
+    
+    console.log('Фильтры применены:', { startDate, endDate, channel });
+    // На следующем шаге сюда зайдет математика расчета SMM-метрики
+}
+
+// Старые слушатели (строки 190-191) для current-date-start и end БОЛЬШЕ НЕ НУЖНЫ.
+// Оставьте только слушатель для канала:
+document.getElementById('current-channel').addEventListener('change', processCurrentMonthData);
+
+// Остальные слушатели для глобальной динамики оставьте без изменений
+document.getElementById('global-month-start').addEventListener('change', processGlobalData);
+document.getElementById('global-month-end').addEventListener('change', processGlobalData);
+document.getElementById('global-channel').addEventListener('change', processGlobalData);
 
         // --- ФУНКЦИИ РАСЧЕТА (СЛЕДУЮЩИЙ ЭТАП) ---
         function processCurrentMonthData() {
