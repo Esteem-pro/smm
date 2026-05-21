@@ -349,60 +349,90 @@
         }
 
         // --- ГЛАВНАЯ ФУНКЦИЯ ---
+               // --- РАСЧЕТ МЕТРИК ---
         function processCurrentMonthData() {
             if (!rawData || !datePicker) return;
             const selectedDates = datePicker.selectedDates;
             if (selectedDates.length < 2) return; 
 
-            // Определяем индекс месяца (m0, m1, m2) исходя из стартовой даты (Янв 2026 = m0)
-            const baseYear = 2026;
+            // Надежно определяем индекс месяца (mX)
             const targetDate = selectedDates[0];
-            const monthIndex = (targetDate.getFullYear() - baseYear) * 12 + targetDate.getMonth();
+            const ruMonths = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+            const targetString = `${ruMonths[targetDate.getMonth()]} ${targetDate.getFullYear()}`;
+            
+            let monthIndex = -1;
+            if (window.monthsData && window.monthsData.length > 0) {
+                monthIndex = window.monthsData.findIndex(m => m.name === targetString);
+            }
+            // Резервный расчет, если месяца еще нет в массиве
+            if (monthIndex === -1) {
+                monthIndex = (targetDate.getFullYear() - 2026) * 12 + targetDate.getMonth();
+            }
+            
             const curPrefix = `m${monthIndex}`;
-            const prevPrefix = `m${monthIndex - 1}`;
+            const prevPrefix = `m${Math.max(0, monthIndex - 1)}`;
             const channelFilter = document.getElementById('current-channel').value;
 
-            // Функция-экстрактор данных из сырого JSON
+            // Чистый экстрактор: берем ТОЛЬКО дневные данные
             const extract = (mPrefix) => {
                 let m = { 
-                    reach: { total: 0, byC: {c0:0, c1:0, c2:0, c3:0, c4:0}, t: Array(35).fill(0) },
-                    leads: { total: 0, byC: {c0:0, c1:0, c2:0, c3:0, c4:0}, t: Array(35).fill(0) },
-                    subs:  { total: 0, byC: {c0:0, c1:0, c2:0, c3:0, c4:0}, t: Array(35).fill(0) },
-                    err:   { total: 0, count: 0, byC: {c0:{s:0,c:0}, c1:{s:0,c:0}, c2:{s:0,c:0}, c3:{s:0,c:0}, c4:{s:0,c:0}}, t: Array(35).fill(0), tCount: Array(35).fill(0) }
+                    reach: { tot: 0, byC: {c0:0,c1:0,c2:0,c3:0,c4:0}, t: Array(42).fill(0) },
+                    leads: { tot: 0, byC: {c0:0,c1:0,c2:0,c3:0,c4:0}, t: Array(42).fill(0) },
+                    subs:  { tot: 0, byC: {c0:0,c1:0,c2:0,c3:0,c4:0}, t: Array(42).fill(0) },
+                    err:   { tot: 0, byC: {c0:{s:0,c:0},c1:{s:0,c:0},c2:{s:0,c:0},c3:{s:0,c:0},c4:{s:0,c:0}}, t: Array(42).fill(0), tc: Array(42).fill(0) }
                 };
 
                 Object.keys(rawData).forEach(key => {
+                    // Фильтруем префикс месяца
                     if (!key.startsWith(`smm_${mPrefix}_`)) return;
+
+                    // Ключ дневных данных ВСЕГДА состоит из 6 частей, и 5-я часть начинается с 'd' 
+                    // Пример: smm_m4_c0_w1_d0_JUQwJTlFJU
                     const parts = key.split('_');
-                    if (parts.length < 6) return;
+                    if (parts.length !== 6 || !parts[4].startsWith('d')) return;
+
                     const cIdx = parts[2]; 
+                    if (channelFilter !== 'all' && cIdx !== channelFilter) return;
+
                     const wIdx = parseInt(parts[3].replace('w', ''));
                     const dIdx = parseInt(parts[4].replace('d', ''));
-                    const metricId = parts[5];
-                    
-                    if (channelFilter !== 'all' && cIdx !== channelFilter) return;
-                    if (isNaN(wIdx) || isNaN(dIdx)) return;
-
+                    const metric = parts[5];
                     const val = Number(rawData[key]) || 0;
+
+                    if (isNaN(wIdx) || isNaN(dIdx)) return;
+                    
+                    // Индекс для графика по дням (до 6 недель по 7 дней = 42)
                     const tIdx = (wIdx * 7) + dIdx;
 
-                    if (metricId === 'JUQwJTlFJU' || metricId === 'JUQwJTlGJU') { // Охват / Показы
-                        m.reach.total += val; m.reach.byC[cIdx] += val; m.reach.t[tIdx] += val;
-                    } else if (metricId === 'JUQwJTlCJU') { // Лиды
-                        m.leads.total += val; m.leads.byC[cIdx] += val; m.leads.t[tIdx] += val;
-                    } else if (metricId === 'JUQwJUE3JU') { // Подписки
-                        m.subs.total += val; m.subs.byC[cIdx] += val; m.subs.t[tIdx] += val;
-                    } else if (metricId === 'RVJS') { // ERR
-                        m.err.total += val; m.err.count += 1; 
-                        m.err.byC[cIdx].s += val; m.err.byC[cIdx].c += 1;
-                        m.err.t[tIdx] += val; m.err.tCount[tIdx] += 1;
+                    if (metric === 'JUQwJTlFJU' || metric === 'JUQwJTlGJU') { 
+                        m.reach.tot += val; m.reach.byC[cIdx] += val; m.reach.t[tIdx] += val; 
+                    }
+                    else if (metric === 'JUQwJTlCJU') { 
+                        m.leads.tot += val; m.leads.byC[cIdx] += val; m.leads.t[tIdx] += val; 
+                    }
+                    else if (metric === 'JUQwJUE3JU') { 
+                        m.subs.tot += val; m.subs.byC[cIdx] += val; m.subs.t[tIdx] += val; 
+                    }
+                    else if (metric === 'RVJS') { 
+                        m.err.byC[cIdx].s += val; m.err.byC[cIdx].c += 1; 
+                        m.err.t[tIdx] += val; m.err.tc[tIdx] += 1; 
                     }
                 });
 
-                // Усреднение ERR
-                m.err.total = m.err.count > 0 ? (m.err.total / m.err.count) : 0;
-                ['c0','c1','c2','c3','c4'].forEach(c => { m.err.byC[c] = m.err.byC[c].c > 0 ? (m.err.byC[c].s / m.err.byC[c].c) : 0; });
-                m.err.t = m.err.t.map((sum, i) => m.err.tCount[i] > 0 ? sum / m.err.tCount[i] : 0);
+                // Усреднение ERR (чтобы проценты не складывались в 500%)
+                let errSum = 0, errCount = 0;
+                ['c0','c1','c2','c3','c4'].forEach(c => {
+                    if (m.err.byC[c].c > 0) {
+                        const avg = m.err.byC[c].s / m.err.byC[c].c;
+                        m.err.byC[c] = avg; // Среднее по каналу
+                        errSum += avg;
+                        errCount++;
+                    } else {
+                        m.err.byC[c] = 0;
+                    }
+                });
+                m.err.tot = errCount > 0 ? errSum / errCount : 0; // Итоговое среднее
+                m.err.t = m.err.t.map((s, i) => m.err.tc[i] > 0 ? s / m.err.tc[i] : 0);
 
                 return m;
             };
@@ -410,29 +440,26 @@
             const current = extract(curPrefix);
             const prev = extract(prevPrefix);
 
-            // 1. ОХВАТЫ
-            document.getElementById('val-reach').innerText = formatNum(current.reach.total);
-            document.getElementById('diff-reach').innerHTML = getCompareBadge(current.reach.total, prev.reach.total);
+            // Отрисовка
+            document.getElementById('val-reach').innerText = formatNum(current.reach.tot);
+            document.getElementById('diff-reach').innerHTML = getCompareBadge(current.reach.tot, prev.reach.tot);
             renderPie('pie-reach', current.reach.byC);
-            renderLine('line-reach', current.reach.t, '#8b5cf6'); // Purple
+            renderLine('line-reach', current.reach.t, '#8b5cf6');
 
-            // 2. ЛИДЫ
-            document.getElementById('val-leads').innerText = formatNum(current.leads.total);
-            document.getElementById('diff-leads').innerHTML = getCompareBadge(current.leads.total, prev.leads.total);
+            document.getElementById('val-leads').innerText = formatNum(current.leads.tot);
+            document.getElementById('diff-leads').innerHTML = getCompareBadge(current.leads.tot, prev.leads.tot);
             renderPie('pie-leads', current.leads.byC);
-            renderLine('line-leads', current.leads.t, '#3b82f6'); // Blue
+            renderLine('line-leads', current.leads.t, '#3b82f6');
 
-            // 3. ПОДПИСЧИКИ
-            document.getElementById('val-subs').innerText = formatNum(current.subs.total);
-            document.getElementById('diff-subs').innerHTML = getCompareBadge(current.subs.total, prev.subs.total);
+            document.getElementById('val-subs').innerText = formatNum(current.subs.tot);
+            document.getElementById('diff-subs').innerHTML = getCompareBadge(current.subs.tot, prev.subs.tot);
             renderPie('pie-subs', current.subs.byC);
-            renderLine('line-subs', current.subs.t, '#10b981'); // Emerald
+            renderLine('line-subs', current.subs.t, '#10b981');
 
-            // 4. ERR
-            document.getElementById('val-err').innerText = formatPerc(current.err.total);
-            document.getElementById('diff-err').innerHTML = getCompareBadge(current.err.total, prev.err.total, true);
+            document.getElementById('val-err').innerText = formatPerc(current.err.tot);
+            document.getElementById('diff-err').innerHTML = getCompareBadge(current.err.tot, prev.err.tot, true);
             renderPie('pie-err', current.err.byC, true);
-            renderLine('line-err', current.err.t, '#64748b', true); // Slate
+            renderLine('line-err', current.err.t, '#64748b', true);
         }
 
         function processGlobalData() {
