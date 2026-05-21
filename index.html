@@ -57,7 +57,7 @@
             </div>
         </header>
 
-        <main class="scroll-area" id="view-current">
+                <main class="scroll-area" id="view-current">
             <div class="max-w-7xl mx-auto p-4 sm:p-6">
                 
                 <div class="flex flex-col sm:flex-row gap-4 mb-6 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
@@ -80,46 +80,72 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                    <div class="bento-card border-dashed border-2 border-slate-200 bg-slate-50 h-32 flex items-center justify-center text-slate-400 font-medium">Метрика 1 (Охваты)</div>
-                    <div class="bento-card border-dashed border-2 border-slate-200 bg-slate-50 h-32 flex items-center justify-center text-slate-400 font-medium">Метрика 2 (Лиды)</div>
-                    <div class="bento-card border-dashed border-2 border-slate-200 bg-slate-50 h-32 flex items-center justify-center text-slate-400 font-medium">Метрика 3 (Подписки)</div>
-                    <div class="bento-card border-dashed border-2 border-slate-200 bg-slate-50 h-32 flex items-center justify-center text-slate-400 font-medium">Метрика 4 (ERR)</div>
-                </div>
-
-            </div>
-        </main>
-
-        <main class="scroll-area hidden" id="view-global">
-            <div class="max-w-7xl mx-auto p-4 sm:p-6">
-                
-                <div class="flex flex-col sm:flex-row gap-4 mb-6 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                    <div class="flex gap-4 flex-1">
-                        <div>
-                            <span class="filter-label">Анализ от</span>
-                            <input type="month" id="global-month-start" class="filter-input">
+                <div class="flex flex-col gap-6">
+                    
+                    <div class="bento-card flex flex-col lg:flex-row gap-6 p-6">
+                        <div class="flex-1 min-w-[200px] flex flex-col">
+                            <span class="metric-title">Суммарный охват / Показы</span>
+                            <div class="metric-value mt-1" id="val-reach">0</div>
+                            <div class="mt-auto" id="diff-reach"></div>
                         </div>
-                        <div>
-                            <span class="filter-label">Анализ до</span>
-                            <input type="month" id="global-month-end" class="filter-input">
+                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span>
+                            <div class="w-full h-[120px] relative"><canvas id="pie-reach"></canvas></div>
+                        </div>
+                        <div class="flex-[2] relative min-h-[140px]">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
+                            <div class="w-full h-[120px] relative"><canvas id="line-reach"></canvas></div>
                         </div>
                     </div>
-                    <div>
-                        <span class="filter-label">Рекламный канал</span>
-                        <select id="global-channel" class="filter-input w-full sm:w-auto min-w-[180px]">
-                            <option value="all">Все каналы</option>
-                            <option value="c0">Instagram</option>
-                            <option value="c1">Telegram</option>
-                            <option value="c2">VK</option>
-                            <option value="c3">Dzen</option>
-                            <option value="c4">YouTube</option>
-                        </select>
-                    </div>
-                </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                    <div class="bento-card border-dashed border-2 border-slate-200 bg-slate-50 h-72 flex items-center justify-center text-slate-400 font-medium">График 1</div>
-                    <div class="bento-card border-dashed border-2 border-slate-200 bg-slate-50 h-72 flex items-center justify-center text-slate-400 font-medium">График 2</div>
+                    <div class="bento-card flex flex-col lg:flex-row gap-6 p-6">
+                        <div class="flex-1 min-w-[200px] flex flex-col">
+                            <span class="metric-title flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-500 block"></span>Всего лидов</span>
+                            <div class="metric-value text-blue-600 mt-1" id="val-leads">0</div>
+                            <div class="mt-auto" id="diff-leads"></div>
+                        </div>
+                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span>
+                            <div class="w-full h-[120px] relative"><canvas id="pie-leads"></canvas></div>
+                        </div>
+                        <div class="flex-[2] relative min-h-[140px]">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
+                            <div class="w-full h-[120px] relative"><canvas id="line-leads"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="bento-card flex flex-col lg:flex-row gap-6 p-6">
+                        <div class="flex-1 min-w-[200px] flex flex-col">
+                            <span class="metric-title flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500 block"></span>Приток подписчиков</span>
+                            <div class="metric-value mt-1" id="val-subs">0</div>
+                            <div class="mt-auto" id="diff-subs"></div>
+                        </div>
+                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span>
+                            <div class="w-full h-[120px] relative"><canvas id="pie-subs"></canvas></div>
+                        </div>
+                        <div class="flex-[2] relative min-h-[140px]">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
+                            <div class="w-full h-[120px] relative"><canvas id="line-subs"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="bento-card flex flex-col lg:flex-row gap-6 p-6">
+                        <div class="flex-1 min-w-[200px] flex flex-col">
+                            <span class="metric-title">Средний уровень ERR</span>
+                            <div class="metric-value text-slate-700 mt-1" id="val-err">0%</div>
+                            <div class="mt-auto" id="diff-err"></div>
+                        </div>
+                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">ERR по каналам</span>
+                            <div class="w-full h-[120px] relative"><canvas id="pie-err"></canvas></div>
+                        </div>
+                        <div class="flex-[2] relative min-h-[140px]">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
+                            <div class="w-full h-[120px] relative"><canvas id="line-err"></canvas></div>
+                        </div>
+                    </div>
+
                 </div>
 
             </div>
@@ -236,18 +262,177 @@
         });
 
         // --- ФУНКЦИИ РАСЧЕТА МЕТРИК ---
+               // Глобальное хранилище графиков (чтобы они не накладывались друг на друга при обновлении)
+        window.smmCharts = {};
+
+        // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+        const formatNum = (num) => new Intl.NumberFormat('ru-RU').format(Math.round(num || 0));
+        const formatPerc = (num) => (num || 0).toFixed(2) + '%';
+
+        function getCompareBadge(current, prev, isPercent = false) {
+            if (prev === 0 || prev === undefined || isNaN(prev)) return `<div class="badge badge-neutral mt-2">Нет данных за прошлый месяц</div>`;
+            const diff = ((current - prev) / prev) * 100;
+            // Логика: рост любой метрики (охват, лиды, подписки, ERR) - это всегда хорошо (зеленый)
+            const colorClass = diff >= 0 ? 'badge-green' : 'badge-red';
+            const trendText = diff >= 0 ? '👍 Лучше' : '📉 Хуже';
+            const diffAbs = Math.abs(diff).toFixed(1);
+            const prevText = isPercent ? prev.toFixed(2) + '%' : formatNum(prev);
+            
+            return `
+                <div class="badge ${colorClass} mt-3 flex flex-col gap-1 items-start">
+                    <span>${trendText} на ${diffAbs}%</span>
+                    <span class="text-[10px] font-normal opacity-70">Прошлый месяц: ${prevText}</span>
+                </div>
+            `;
+        }
+
+        function renderPie(id, dataObj, isAverage = false) {
+            const ctx = document.getElementById(id).getContext('2d');
+            if (window.smmCharts[id]) window.smmCharts[id].destroy();
+            
+            const labels = ['Insta', 'TG', 'VK', 'Dzen', 'YouTube'];
+            const values = [dataObj.c0, dataObj.c1, dataObj.c2, dataObj.c3, dataObj.c4];
+            const colors = ['#e1306c', '#0088cc', '#0077ff', '#10b981', '#ff0000'];
+
+            const fLabels = [], fValues = [], fColors = [];
+            values.forEach((v, i) => {
+                // Если считаем ERR (isAverage), выводим все каналы, где ERR > 0
+                if(v > 0) { fLabels.push(labels[i]); fValues.push(v); fColors.push(colors[i]); }
+            });
+
+            if (fValues.length === 0) {
+                fLabels.push('Нет данных'); fValues.push(1); fColors.push('#e2e8f0');
+            }
+
+            window.smmCharts[id] = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: fLabels, datasets: [{ data: fValues, backgroundColor: fColors, borderWidth: 0 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '65%',
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            color: '#fff', font: { weight: 'bold', size: 10 },
+                            formatter: (v) => {
+                                if (v === 1 && fLabels[0] === 'Нет данных') return '';
+                                if (isAverage) return v.toFixed(1) + '%';
+                                if (v >= 1000000) return (v/1000000).toFixed(1) + 'M';
+                                if (v >= 1000) return (v/1000).toFixed(0) + 'k';
+                                return Math.round(v);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderLine(id, timelineArray, color, isPercent = false) {
+            const ctx = document.getElementById(id).getContext('2d');
+            if (window.smmCharts[id]) window.smmCharts[id].destroy();
+
+            // Обрезаем пустые дни в конце (будущие дни месяца)
+            let lastNonZero = timelineArray.length - 1;
+            while(lastNonZero >= 0 && timelineArray[lastNonZero] === 0) lastNonZero--;
+            const activeData = timelineArray.slice(0, lastNonZero >= 0 ? lastNonZero + 1 : 0);
+            const labels = activeData.map((_, i) => `День ${i+1}`);
+
+            window.smmCharts[id] = new Chart(ctx, {
+                type: 'line',
+                data: { labels: labels, datasets: [{ data: activeData, borderColor: color, backgroundColor: color + '1a', borderWidth: 2, tension: 0.4, fill: true, pointRadius: 1, pointHoverRadius: 5 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, datalabels: { display: false } },
+                    scales: { x: { display: false }, y: { border: {display: false}, grid: { borderDash: [4, 4] }, ticks: { callback: v => isPercent ? v + '%' : v } } },
+                    interaction: { mode: 'index', intersect: false }
+                }
+            });
+        }
+
+        // --- ГЛАВНАЯ ФУНКЦИЯ ---
         function processCurrentMonthData() {
             if (!rawData || !datePicker) return;
-            
             const selectedDates = datePicker.selectedDates;
             if (selectedDates.length < 2) return; 
 
-            const startDate = selectedDates[0].toISOString().split('T')[0];
-            const endDate = selectedDates[1].toISOString().split('T')[0];
-            const channel = document.getElementById('current-channel').value;
-            
-            console.log('Текущий месяц, фильтры применены:', { startDate, endDate, channel });
-            // В следующем шаге мы добавим сюда математику для расчета SMM-показателей
+            // Определяем индекс месяца (m0, m1, m2) исходя из стартовой даты (Янв 2026 = m0)
+            const baseYear = 2026;
+            const targetDate = selectedDates[0];
+            const monthIndex = (targetDate.getFullYear() - baseYear) * 12 + targetDate.getMonth();
+            const curPrefix = `m${monthIndex}`;
+            const prevPrefix = `m${monthIndex - 1}`;
+            const channelFilter = document.getElementById('current-channel').value;
+
+            // Функция-экстрактор данных из сырого JSON
+            const extract = (mPrefix) => {
+                let m = { 
+                    reach: { total: 0, byC: {c0:0, c1:0, c2:0, c3:0, c4:0}, t: Array(35).fill(0) },
+                    leads: { total: 0, byC: {c0:0, c1:0, c2:0, c3:0, c4:0}, t: Array(35).fill(0) },
+                    subs:  { total: 0, byC: {c0:0, c1:0, c2:0, c3:0, c4:0}, t: Array(35).fill(0) },
+                    err:   { total: 0, count: 0, byC: {c0:{s:0,c:0}, c1:{s:0,c:0}, c2:{s:0,c:0}, c3:{s:0,c:0}, c4:{s:0,c:0}}, t: Array(35).fill(0), tCount: Array(35).fill(0) }
+                };
+
+                Object.keys(rawData).forEach(key => {
+                    if (!key.startsWith(`smm_${mPrefix}_`)) return;
+                    const parts = key.split('_');
+                    if (parts.length < 6) return;
+                    const cIdx = parts[2]; 
+                    const wIdx = parseInt(parts[3].replace('w', ''));
+                    const dIdx = parseInt(parts[4].replace('d', ''));
+                    const metricId = parts[5];
+                    
+                    if (channelFilter !== 'all' && cIdx !== channelFilter) return;
+                    if (isNaN(wIdx) || isNaN(dIdx)) return;
+
+                    const val = Number(rawData[key]) || 0;
+                    const tIdx = (wIdx * 7) + dIdx;
+
+                    if (metricId === 'JUQwJTlFJU' || metricId === 'JUQwJTlGJU') { // Охват / Показы
+                        m.reach.total += val; m.reach.byC[cIdx] += val; m.reach.t[tIdx] += val;
+                    } else if (metricId === 'JUQwJTlCJU') { // Лиды
+                        m.leads.total += val; m.leads.byC[cIdx] += val; m.leads.t[tIdx] += val;
+                    } else if (metricId === 'JUQwJUE3JU') { // Подписки
+                        m.subs.total += val; m.subs.byC[cIdx] += val; m.subs.t[tIdx] += val;
+                    } else if (metricId === 'RVJS') { // ERR
+                        m.err.total += val; m.err.count += 1; 
+                        m.err.byC[cIdx].s += val; m.err.byC[cIdx].c += 1;
+                        m.err.t[tIdx] += val; m.err.tCount[tIdx] += 1;
+                    }
+                });
+
+                // Усреднение ERR
+                m.err.total = m.err.count > 0 ? (m.err.total / m.err.count) : 0;
+                ['c0','c1','c2','c3','c4'].forEach(c => { m.err.byC[c] = m.err.byC[c].c > 0 ? (m.err.byC[c].s / m.err.byC[c].c) : 0; });
+                m.err.t = m.err.t.map((sum, i) => m.err.tCount[i] > 0 ? sum / m.err.tCount[i] : 0);
+
+                return m;
+            };
+
+            const current = extract(curPrefix);
+            const prev = extract(prevPrefix);
+
+            // 1. ОХВАТЫ
+            document.getElementById('val-reach').innerText = formatNum(current.reach.total);
+            document.getElementById('diff-reach').innerHTML = getCompareBadge(current.reach.total, prev.reach.total);
+            renderPie('pie-reach', current.reach.byC);
+            renderLine('line-reach', current.reach.t, '#8b5cf6'); // Purple
+
+            // 2. ЛИДЫ
+            document.getElementById('val-leads').innerText = formatNum(current.leads.total);
+            document.getElementById('diff-leads').innerHTML = getCompareBadge(current.leads.total, prev.leads.total);
+            renderPie('pie-leads', current.leads.byC);
+            renderLine('line-leads', current.leads.t, '#3b82f6'); // Blue
+
+            // 3. ПОДПИСЧИКИ
+            document.getElementById('val-subs').innerText = formatNum(current.subs.total);
+            document.getElementById('diff-subs').innerHTML = getCompareBadge(current.subs.total, prev.subs.total);
+            renderPie('pie-subs', current.subs.byC);
+            renderLine('line-subs', current.subs.t, '#10b981'); // Emerald
+
+            // 4. ERR
+            document.getElementById('val-err').innerText = formatPerc(current.err.total);
+            document.getElementById('diff-err').innerHTML = getCompareBadge(current.err.total, prev.err.total, true);
+            renderPie('pie-err', current.err.byC, true);
+            renderLine('line-err', current.err.t, '#64748b', true); // Slate
         }
 
         function processGlobalData() {
