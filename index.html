@@ -121,11 +121,6 @@
             background: #fee2e2;
             color: #991b1b;
         }
-
-        .badge-blue {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
     </style>
 </head>
 
@@ -134,10 +129,13 @@
     <div id="auth-screen" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white p-8 rounded-[2rem] shadow-2xl max-w-sm w-full relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-cyan-400"></div>
+
             <h2 class="text-2xl font-extrabold mt-2 text-slate-900">Вход (SMM)</h2>
+
             <p class="mt-2 text-sm text-slate-500">
                 Дашборд читает данные из существующей ветки <b>kpi_project</b>.
             </p>
+
             <button id="login-btn" class="w-full mt-6 bg-slate-900 text-white p-3.5 rounded-xl font-bold flex justify-center items-center h-14 transition hover:bg-slate-800">
                 Войти через Google
             </button>
@@ -190,29 +188,29 @@
                 <div class="flex flex-col gap-6">
 
                     <div class="bento-card flex flex-col lg:flex-row gap-6 p-6">
-                        <div class="flex-1 min-w-[200px] flex flex-col">
+                        <div class="flex-1 min-w-[220px] flex flex-col">
                             <span class="metric-title">Суммарный охват / показы / просмотры</span>
                             <div class="metric-value mt-1" id="val-reach">0</div>
                             <div class="mt-auto w-full" id="diff-reach"></div>
                         </div>
 
-                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span>
-                            <div class="w-full h-[120px] relative">
+                        <div class="flex-1 relative min-h-[190px] lg:border-l lg:border-r border-slate-100 px-4">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3 block">Доли каналов</span>
+                            <div class="w-full h-[165px] relative">
                                 <canvas id="pie-reach"></canvas>
                             </div>
                         </div>
 
-                        <div class="flex-[2] relative min-h-[140px]">
+                        <div class="flex-[2] relative min-h-[190px]">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
-                            <div class="w-full h-[120px] relative">
+                            <div class="w-full h-[165px] relative">
                                 <canvas id="line-reach"></canvas>
                             </div>
                         </div>
                     </div>
 
                     <div class="bento-card flex flex-col lg:flex-row gap-6 p-6">
-                        <div class="flex-1 min-w-[200px] flex flex-col">
+                        <div class="flex-1 min-w-[220px] flex flex-col">
                             <span class="metric-title flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-blue-500 block"></span>
                                 Всего лидов
@@ -221,23 +219,23 @@
                             <div class="mt-auto w-full" id="diff-leads"></div>
                         </div>
 
-                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span>
-                            <div class="w-full h-[120px] relative">
+                        <div class="flex-1 relative min-h-[190px] lg:border-l lg:border-r border-slate-100 px-4">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3 block">Доли каналов</span>
+                            <div class="w-full h-[165px] relative">
                                 <canvas id="pie-leads"></canvas>
                             </div>
                         </div>
 
-                        <div class="flex-[2] relative min-h-[140px]">
+                        <div class="flex-[2] relative min-h-[190px]">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
-                            <div class="w-full h-[120px] relative">
+                            <div class="w-full h-[165px] relative">
                                 <canvas id="line-leads"></canvas>
                             </div>
                         </div>
                     </div>
 
                     <div class="bento-card flex flex-col lg:flex-row gap-6 p-6">
-                        <div class="flex-1 min-w-[200px] flex flex-col">
+                        <div class="flex-1 min-w-[220px] flex flex-col">
                             <span class="metric-title flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-emerald-500 block"></span>
                                 Приток подписчиков
@@ -246,38 +244,38 @@
                             <div class="mt-auto w-full" id="diff-subs"></div>
                         </div>
 
-                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span>
-                            <div class="w-full h-[120px] relative">
+                        <div class="flex-1 relative min-h-[190px] lg:border-l lg:border-r border-slate-100 px-4">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3 block">Доли каналов</span>
+                            <div class="w-full h-[165px] relative">
                                 <canvas id="pie-subs"></canvas>
                             </div>
                         </div>
 
-                        <div class="flex-[2] relative min-h-[140px]">
+                        <div class="flex-[2] relative min-h-[190px]">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
-                            <div class="w-full h-[120px] relative">
+                            <div class="w-full h-[165px] relative">
                                 <canvas id="line-subs"></canvas>
                             </div>
                         </div>
                     </div>
 
                     <div class="bento-card flex flex-col lg:flex-row gap-6 p-6">
-                        <div class="flex-1 min-w-[200px] flex flex-col">
+                        <div class="flex-1 min-w-[220px] flex flex-col">
                             <span class="metric-title">Средний ERR</span>
                             <div class="metric-value text-slate-700 mt-1" id="val-err">0%</div>
                             <div class="mt-auto w-full" id="diff-err"></div>
                         </div>
 
-                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">ERR по каналам</span>
-                            <div class="w-full h-[120px] relative">
+                        <div class="flex-1 relative min-h-[190px] lg:border-l lg:border-r border-slate-100 px-4">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3 block">ERR по каналам</span>
+                            <div class="w-full h-[165px] relative">
                                 <canvas id="pie-err"></canvas>
                             </div>
                         </div>
 
-                        <div class="flex-[2] relative min-h-[140px]">
+                        <div class="flex-[2] relative min-h-[190px]">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
-                            <div class="w-full h-[120px] relative">
+                            <div class="w-full h-[165px] relative">
                                 <canvas id="line-err"></canvas>
                             </div>
                         </div>
@@ -404,56 +402,56 @@
             return dateOnly(a) <= dateOnly(b) ? dateOnly(a) : dateOnly(b);
         }
 
-        function maxDate(a, b) {
-            return dateOnly(a) >= dateOnly(b) ? dateOnly(a) : dateOnly(b);
-        }
-
         function monthNameFromDate(date) {
             return `${ruMonths[date.getMonth()]} ${date.getFullYear()}`;
         }
 
+        function formatShortDate(date) {
+            return `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}`;
+        }
+
         function isFullMonthRange(startDate, endDate) {
-    const start = dateOnly(startDate);
-    const end = dateOnly(endDate);
+            const start = dateOnly(startDate);
+            const end = dateOnly(endDate);
 
-    const firstDay = new Date(start.getFullYear(), start.getMonth(), 1);
-    const lastDay = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+            const firstDay = new Date(start.getFullYear(), start.getMonth(), 1);
+            const lastDay = new Date(start.getFullYear(), start.getMonth() + 1, 0);
 
-    return (
-        start.getTime() === firstDay.getTime() &&
-        end.getTime() === lastDay.getTime()
-    );
-}
+            return (
+                start.getTime() === firstDay.getTime() &&
+                end.getTime() === lastDay.getTime()
+            );
+        }
 
-function getPreviousAnalogRange(startDate, selectedEndDate) {
-    const start = dateOnly(startDate);
-    const end = dateOnly(selectedEndDate);
+        function getPreviousAnalogRange(startDate, endDate) {
+            const start = dateOnly(startDate);
+            const end = dateOnly(endDate);
 
-    if (isFullMonthRange(start, end)) {
-        const prevMonth = new Date(start.getFullYear(), start.getMonth() - 1, 1);
+            if (isFullMonthRange(start, end)) {
+                const prevMonth = new Date(start.getFullYear(), start.getMonth() - 1, 1);
 
-        return {
-            start: new Date(prevMonth.getFullYear(), prevMonth.getMonth(), 1),
-            end: new Date(prevMonth.getFullYear(), prevMonth.getMonth() + 1, 0),
-            label: `прошлый месяц`
-        };
-    }
+                const prevStart = new Date(prevMonth.getFullYear(), prevMonth.getMonth(), 1);
+                const prevEnd = new Date(prevMonth.getFullYear(), prevMonth.getMonth() + 1, 0);
 
-    const prevStart = new Date(start.getFullYear(), start.getMonth() - 1, start.getDate());
-    const durationDays = daysBetweenInclusive(start, end);
-    const prevEnd = new Date(prevStart);
-    prevEnd.setDate(prevStart.getDate() + durationDays - 1);
+                return {
+                    start: prevStart,
+                    end: prevEnd,
+                    label: `${formatShortDate(prevStart)}–${formatShortDate(prevEnd)}`
+                };
+            }
 
-    return {
-        start: prevStart,
-        end: prevEnd,
-        label: `${formatShortDate(prevStart)}–${formatShortDate(prevEnd)}`
-    };
-}
+            const prevStart = new Date(start.getFullYear(), start.getMonth() - 1, start.getDate());
+            const durationDays = daysBetweenInclusive(start, end);
+            const prevEnd = new Date(prevStart);
 
-function formatShortDate(date) {
-    return `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}`;
-}
+            prevEnd.setDate(prevStart.getDate() + durationDays - 1);
+
+            return {
+                start: prevStart,
+                end: prevEnd,
+                label: `${formatShortDate(prevStart)}–${formatShortDate(prevEnd)}`
+            };
+        }
 
         function getActualEndDate(startDate, endDate) {
             const today = todayOnly();
@@ -587,6 +585,7 @@ function formatShortDate(date) {
                 labels: Array.from({ length: dayCount }, (_, i) => {
                     const d = new Date(safeStart);
                     d.setDate(safeStart.getDate() + i);
+
                     return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
                 }),
                 reach: initMetricBucket(dayCount),
@@ -718,212 +717,210 @@ function formatShortDate(date) {
         }
 
         function getCompareBadge(currentTotal, prevTotal, currentDays, prevDays, isPercent = false, compareLabel = '') {
-    if (!prevTotal || isNaN(prevTotal)) {
-        return `
-            <div class="mt-3 flex flex-col items-start w-full bg-slate-50 rounded-lg p-2 border border-slate-100">
-                <div class="badge badge-neutral flex flex-col gap-1 items-start w-full border-none px-2 py-1">
-                    <span class="font-bold">Нет данных для сравнения</span>
-                    ${compareLabel ? `<span class="text-[10px] font-medium opacity-80">Сравнение: ${compareLabel}</span>` : ''}
+            if (!prevTotal || isNaN(prevTotal)) {
+                return `
+                    <div class="mt-3 flex flex-col items-start w-full bg-slate-50 rounded-lg p-2 border border-slate-100">
+                        <div class="badge badge-neutral flex flex-col gap-1 items-start w-full border-none px-2 py-1">
+                            <span class="font-bold">Нет данных для сравнения</span>
+                            ${compareLabel ? `<span class="text-[10px] font-medium opacity-80">Сравнение: ${compareLabel}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            const curMetric = isPercent ? currentTotal : currentTotal / Math.max(1, currentDays);
+            const prevMetric = isPercent ? prevTotal : prevTotal / Math.max(1, prevDays);
+
+            const diff = ((curMetric - prevMetric) / prevMetric) * 100;
+            const good = diff >= 0;
+            const colorClass = good ? 'badge-green' : 'badge-red';
+            const trendText = good ? '👍 Темп выше' : '📉 Темп ниже';
+            const diffAbs = Math.abs(diff).toFixed(1);
+
+            const prevText = isPercent ? formatPerc(prevTotal) : `${formatNum(prevMetric)} / день`;
+
+            const curText = isPercent
+                ? ''
+                : `<span class="block text-[11px] font-bold text-slate-500 mb-1 border-b border-slate-100 pb-1 w-full uppercase tracking-wide">
+                    В среднем: <span class="text-slate-800">${formatNum(curMetric)}</span> в день
+                </span>`;
+
+            return `
+                <div class="mt-3 flex flex-col items-start w-full bg-slate-50 rounded-lg p-2 border border-slate-100">
+                    ${curText}
+                    <div class="badge ${colorClass} flex flex-col gap-1 items-start w-full border-none px-2 py-1 mt-1">
+                        <span class="font-bold">${trendText} на ${diffAbs}%</span>
+                        <span class="text-[10px] font-medium opacity-80">Сравнение: ${compareLabel || 'аналогичный период'}</span>
+                        <span class="text-[10px] font-medium opacity-80">Прошлый период: ${prevText}</span>
+                    </div>
                 </div>
-            </div>
-        `;
-    }
+            `;
+        }
 
-    const curMetric = isPercent ? currentTotal : currentTotal / Math.max(1, currentDays);
-    const prevMetric = isPercent ? prevTotal : prevTotal / Math.max(1, prevDays);
-
-    const diff = ((curMetric - prevMetric) / prevMetric) * 100;
-    const good = diff >= 0;
-    const colorClass = good ? 'badge-green' : 'badge-red';
-    const trendText = good ? '👍 Темп выше' : '💩 Темп ниже';
-    const diffAbs = Math.abs(diff).toFixed(1);
-
-    const prevText = isPercent ? formatPerc(prevTotal) : `${formatNum(prevMetric)} / день`;
-
-    const curText = isPercent
-        ? ''
-        : `<span class="block text-[11px] font-bold text-slate-500 mb-1 border-b border-slate-100 pb-1 w-full uppercase tracking-wide">
-            В среднем: <span class="text-slate-800">${formatNum(curMetric)}</span> в день
-        </span>`;
-
-    return `
-        <div class="mt-3 flex flex-col items-start w-full bg-slate-50 rounded-lg p-2 border border-slate-100">
-            ${curText}
-            <div class="badge ${colorClass} flex flex-col gap-1 items-start w-full border-none px-2 py-1 mt-1">
-                <span class="font-bold">${trendText} на ${diffAbs}%</span>
-                <span class="text-[10px] font-medium opacity-80">Сравнение: ${compareLabel || 'аналогичный период'}</span>
-                <span class="text-[10px] font-medium opacity-80">Прошлый период: ${prevText}</span>
-            </div>
-        </div>
-    `;
-}
         function channelName(monthIndex, cKey) {
             const cNum = Number(String(cKey).replace('c', ''));
+
             return monthsData[monthIndex]?.smmChannels?.[cNum]?.name || `Канал ${cNum + 1}`;
         }
 
         function renderPie(id, dataObj, monthIndex, isAverage = false) {
-    const canvas = document.getElementById(id);
+            const canvas = document.getElementById(id);
 
-    if (!canvas) return;
+            if (!canvas) return;
 
-    if (smmCharts[id]) {
-        smmCharts[id].destroy();
-    }
+            if (smmCharts[id]) {
+                smmCharts[id].destroy();
+            }
 
-    const defaultColors = [
-        '#e1306c', '#0088cc', '#0077ff', '#10b981', '#ff0000',
-        '#8b5cf6', '#f59e0b', '#14b8a6', '#f43f5e', '#64748b'
-    ];
+            const defaultColors = [
+                '#e1306c', '#0088cc', '#0077ff', '#10b981', '#ff0000',
+                '#8b5cf6', '#f59e0b', '#14b8a6', '#f43f5e', '#64748b'
+            ];
 
-    const labels = [];
-    const values = [];
-    const colors = [];
+            const rows = [];
 
-    Object.keys(dataObj || {}).forEach(cKey => {
-        const v = Number(dataObj[cKey]) || 0;
+            Object.keys(dataObj || {}).forEach(cKey => {
+                const value = Number(dataObj[cKey]) || 0;
 
-        if (v > 0) {
-            labels.push(channelName(monthIndex, cKey));
-            values.push(v);
-            colors.push(defaultColors[Number(cKey.replace('c', '')) % defaultColors.length]);
-        }
-    });
+                if (value > 0) {
+                    const cNum = Number(String(cKey).replace('c', ''));
 
-    if (!values.length) {
-        labels.push('Нет данных');
-        values.push(1);
-        colors.push('#e2e8f0');
-    }
+                    rows.push({
+                        key: cKey,
+                        name: channelName(monthIndex, cKey),
+                        value,
+                        color: defaultColors[cNum % defaultColors.length]
+                    });
+                }
+            });
 
-    const total = values.reduce((sum, v) => sum + v, 0);
+            rows.sort((a, b) => b.value - a.value);
 
-    const labelsWithShares = labels.map((label, index) => {
-        if (label === 'Нет данных') return label;
+            if (!rows.length) {
+                rows.push({
+                    key: 'empty',
+                    name: 'Нет данных',
+                    value: 0,
+                    color: '#e2e8f0'
+                });
+            }
 
-        const value = values[index] || 0;
-        const share = total > 0 ? (value / total) * 100 : 0;
+            const total = rows.reduce((sum, row) => sum + row.value, 0);
 
-        return `${label} — ${share.toFixed(1)}%`;
-    });
+            const labels = rows.map(row => {
+                if (row.name === 'Нет данных') {
+                    return 'Нет данных';
+                }
 
-    smmCharts[id] = new Chart(canvas, {
-        type: 'doughnut',
-        data: {
-            labels: labelsWithShares,
-            datasets: [{
-                data: values,
-                backgroundColor: colors,
-                borderColor: '#ffffff',
-                borderWidth: 3,
-                hoverOffset: 6
-            }]
-        },
-        plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '66%',
-            layout: {
-                padding: 8
-            },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'bottom',
-                    labels: {
-                        usePointStyle: true,
-                        pointStyle: 'circle',
-                        boxWidth: 7,
-                        boxHeight: 7,
-                        padding: 12,
-                        color: '#64748b',
-                        font: {
-                            family: 'Inter',
-                            size: 10,
-                            weight: '700'
+                const share = total > 0 ? (row.value / total) * 100 : 0;
+                const shownValue = isAverage ? `${row.value.toFixed(1)}%` : formatNum(row.value);
+
+                return `${row.name} · ${shownValue} · ${share.toFixed(1)}%`;
+            });
+
+            const values = rows.map(row => row.value);
+            const colors = rows.map(row => row.color);
+
+            smmCharts[id] = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderRadius: 999,
+                        borderSkipped: false,
+                        barThickness: 14,
+                        maxBarThickness: 18
+                    }]
+                },
+                plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            right: 34,
+                            left: 0,
+                            top: 0,
+                            bottom: 0
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
                         },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    return rows[context[0].dataIndex]?.name || '';
+                                },
+                                label: function(context) {
+                                    const row = rows[context.dataIndex];
+                                    const value = row?.value || 0;
+                                    const share = total > 0 ? (value / total) * 100 : 0;
+                                    const shownValue = isAverage ? `${value.toFixed(2)}%` : formatNum(value);
 
-                        generateLabels: function(chart) {
-                            const dataset = chart.data.datasets[0];
+                                    return `Значение: ${shownValue}; Доля: ${share.toFixed(1)}%`;
+                                }
+                            }
+                        },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'right',
+                            clamp: true,
+                            color: '#0f172a',
+                            font: {
+                                family: 'Inter',
+                                weight: '800',
+                                size: 10
+                            },
+                            formatter: function(value, context) {
+                                const row = rows[context.dataIndex];
 
-                            return chart.data.labels.map((label, i) => {
-                                const value = dataset.data[i] || 0;
-                                const rawName = labels[i] || label;
+                                if (!row || row.name === 'Нет данных') return '';
+
                                 const share = total > 0 ? (value / total) * 100 : 0;
 
-                                const shownValue = isAverage
-                                    ? value.toFixed(1) + '%'
-                                    : formatNum(value);
+                                if (isAverage) {
+                                    return `${value.toFixed(1)}%`;
+                                }
 
-                                return {
-                                    text: rawName === 'Нет данных'
-                                        ? rawName
-                                        : `${rawName}: ${shownValue} · ${share.toFixed(1)}%`,
-                                    fillStyle: dataset.backgroundColor[i],
-                                    strokeStyle: dataset.backgroundColor[i],
-                                    lineWidth: 0,
-                                    hidden: false,
-                                    index: i
-                                };
-                            });
+                                return `${share.toFixed(1)}%`;
+                            }
                         }
-                    }
-                },
-
-                tooltip: {
-                    callbacks: {
-                        title: function(context) {
-                            const index = context[0].dataIndex;
-                            return labels[index] || '';
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            display: false,
+                            grid: {
+                                display: false
+                            }
                         },
-                        label: function(context) {
-                            const value = Number(context.raw) || 0;
-                            const percent = total > 0 ? (value / total * 100) : 0;
-
-                            const shownValue = isAverage
-                                ? value.toFixed(2) + '%'
-                                : formatNum(value);
-
-                            return `Значение: ${shownValue}; Доля: ${percent.toFixed(1)}%`;
+                        y: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#334155',
+                                font: {
+                                    family: 'Inter',
+                                    size: 10,
+                                    weight: '800'
+                                },
+                                callback: function(value) {
+                                    const label = this.getLabelForValue(value);
+                                    return label.length > 36 ? label.slice(0, 36) + '…' : label;
+                                }
+                            }
                         }
-                    }
-                },
-
-                datalabels: {
-                    display: function(context) {
-                        if (labels[0] === 'Нет данных') return false;
-
-                        const value = Number(context.dataset.data[context.dataIndex]) || 0;
-                        const percent = total > 0 ? (value / total * 100) : 0;
-
-                        // На графике показываем только сектора от 8%,
-                        // чтобы мелкие подписи не слипались.
-                        return percent >= 8;
-                    },
-                    color: '#fff',
-                    font: {
-                        weight: '800',
-                        size: 11
-                    },
-                    formatter: function(value) {
-                        const percent = total > 0 ? (value / total * 100) : 0;
-
-                        const shownValue = isAverage
-                            ? value.toFixed(1) + '%'
-                            : (
-                                value >= 1000000 ? (value / 1000000).toFixed(1) + 'M' :
-                                value >= 1000 ? (value / 1000).toFixed(0) + 'k' :
-                                Math.round(value)
-                            );
-
-                        return `${shownValue}\n${percent.toFixed(1)}%`;
                     }
                 }
-            }
+            });
         }
-    });
-}
+
         function renderLine(id, labels, timelineArray, color, isPercent = false) {
             const canvas = document.getElementById(id);
 
@@ -1034,7 +1031,6 @@ function formatShortDate(date) {
 
                 const selectedStart = dateOnly(selectedDates[0]);
                 const selectedEnd = dateOnly(selectedDates[1]);
-
                 const actualEnd = getActualEndDate(selectedStart, selectedEnd);
 
                 updateMonthLabel(selectedStart);
@@ -1056,35 +1052,61 @@ function formatShortDate(date) {
                 const current = extractSMMRange(monthIndex, selectedStart, actualEnd, channelFilter);
 
                 const prevRange = getPreviousAnalogRange(selectedStart, selectedEnd);
-const prevActualEnd = prevRange.end;
+                const prevMonthIndex = findMonthIndexByDate(prevRange.start);
 
-const prevMonthIndex = findMonthIndexByDate(prevRange.start);
+                const prev = prevMonthIndex >= 0
+                    ? extractSMMRange(prevMonthIndex, prevRange.start, prevRange.end, channelFilter)
+                    : null;
 
-const prev = prevMonthIndex >= 0
-    ? extractSMMRange(prevMonthIndex, prevRange.start, prevActualEnd, channelFilter)
-    : null;
-
-const currentDays = daysBetweenInclusive(selectedStart, actualEnd);
-const prevDays = daysBetweenInclusive(prevRange.start, prevActualEnd);
-const compareLabel = prevRange.label;
+                const currentDays = daysBetweenInclusive(selectedStart, actualEnd);
+                const prevDays = daysBetweenInclusive(prevRange.start, prevRange.end);
+                const compareLabel = prevRange.label;
 
                 document.getElementById('val-reach').innerText = formatNum(current.reach.tot);
-                document.getElementById('diff-reach').innerHTML = getCompareBadge(current.reach.tot, prev?.reach?.tot, currentDays, prevDays, false, compareLabel);
+                document.getElementById('diff-reach').innerHTML = getCompareBadge(
+                    current.reach.tot,
+                    prev?.reach?.tot,
+                    currentDays,
+                    prevDays,
+                    false,
+                    compareLabel
+                );
                 renderPie('pie-reach', current.reach.byC, monthIndex);
                 renderLine('line-reach', current.labels, current.reach.t, '#8b5cf6');
 
                 document.getElementById('val-leads').innerText = formatNum(current.leads.tot);
-                document.getElementById('diff-leads').innerHTML = getCompareBadge(current.leads.tot, prev?.leads?.tot, currentDays, prevDays, false, compareLabel);
+                document.getElementById('diff-leads').innerHTML = getCompareBadge(
+                    current.leads.tot,
+                    prev?.leads?.tot,
+                    currentDays,
+                    prevDays,
+                    false,
+                    compareLabel
+                );
                 renderPie('pie-leads', current.leads.byC, monthIndex);
                 renderLine('line-leads', current.labels, current.leads.t, '#3b82f6');
 
                 document.getElementById('val-subs').innerText = formatNum(current.subs.tot);
-                document.getElementById('diff-subs').innerHTML = getCompareBadge(current.subs.tot, prev?.subs?.tot, currentDays, prevDays, false, compareLabel);
+                document.getElementById('diff-subs').innerHTML = getCompareBadge(
+                    current.subs.tot,
+                    prev?.subs?.tot,
+                    currentDays,
+                    prevDays,
+                    false,
+                    compareLabel
+                );
                 renderPie('pie-subs', current.subs.byC, monthIndex);
                 renderLine('line-subs', current.labels, current.subs.t, '#10b981');
 
                 document.getElementById('val-err').innerText = formatPerc(current.err.tot);
-                document.getElementById('diff-err').innerHTML = getCompareBadge(current.err.tot, prev?.err?.tot, currentDays, prevDays, true, compareLabel);
+                document.getElementById('diff-err').innerHTML = getCompareBadge(
+                    current.err.tot,
+                    prev?.err?.tot,
+                    currentDays,
+                    prevDays,
+                    true,
+                    compareLabel
+                );
                 renderPie('pie-err', current.err.byC, monthIndex, true);
                 renderLine('line-err', current.labels, current.err.t, '#64748b', true);
 
