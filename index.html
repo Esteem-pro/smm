@@ -735,7 +735,7 @@ function formatShortDate(date) {
     const diff = ((curMetric - prevMetric) / prevMetric) * 100;
     const good = diff >= 0;
     const colorClass = good ? 'badge-green' : 'badge-red';
-    const trendText = good ? '👍 Темп выше' : '📉 Темп ниже';
+    const trendText = good ? '👍 Темп выше' : '💩 Темп ниже';
     const diffAbs = Math.abs(diff).toFixed(1);
 
     const prevText = isPercent ? formatPerc(prevTotal) : `${formatNum(prevMetric)} / день`;
