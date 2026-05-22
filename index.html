@@ -412,14 +412,48 @@
             return `${ruMonths[date.getMonth()]} ${date.getFullYear()}`;
         }
 
-        function getPreviousFullMonthRange(startDate) {
-            const prevMonthDate = new Date(startDate.getFullYear(), startDate.getMonth() - 1, 1);
+        function isFullMonthRange(startDate, endDate) {
+    const start = dateOnly(startDate);
+    const end = dateOnly(endDate);
 
-            return {
-                start: new Date(prevMonthDate.getFullYear(), prevMonthDate.getMonth(), 1),
-                end: new Date(prevMonthDate.getFullYear(), prevMonthDate.getMonth() + 1, 0)
-            };
-        }
+    const firstDay = new Date(start.getFullYear(), start.getMonth(), 1);
+    const lastDay = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+
+    return (
+        start.getTime() === firstDay.getTime() &&
+        end.getTime() === lastDay.getTime()
+    );
+}
+
+function getPreviousAnalogRange(startDate, selectedEndDate) {
+    const start = dateOnly(startDate);
+    const end = dateOnly(selectedEndDate);
+
+    if (isFullMonthRange(start, end)) {
+        const prevMonth = new Date(start.getFullYear(), start.getMonth() - 1, 1);
+
+        return {
+            start: new Date(prevMonth.getFullYear(), prevMonth.getMonth(), 1),
+            end: new Date(prevMonth.getFullYear(), prevMonth.getMonth() + 1, 0),
+            label: `прошлый месяц`
+        };
+    }
+
+    const prevStart = new Date(start.getFullYear(), start.getMonth() - 1, start.getDate());
+    const durationDays = daysBetweenInclusive(start, end);
+    const prevEnd = new Date(prevStart);
+    prevEnd.setDate(prevStart.getDate() + durationDays - 1);
+
+    return {
+        start: prevStart,
+        end: prevEnd,
+        label: `${formatShortDate(prevStart)}–${formatShortDate(prevEnd)}`
+    };
+}
+
+function formatShortDate(date) {
+    return `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
 
         function getActualEndDate(startDate, endDate) {
             const today = todayOnly();
@@ -683,37 +717,46 @@
             return result;
         }
 
-        function getCompareBadge(currentTotal, prevTotal, currentDays, prevDays, isPercent = false) {
-            if (!prevTotal || isNaN(prevTotal)) {
-                return `<div class="badge badge-neutral mt-2">Нет данных за прошлый месяц</div>`;
-            }
-
-            const curMetric = isPercent ? currentTotal : currentTotal / Math.max(1, currentDays);
-            const prevMetric = isPercent ? prevTotal : prevTotal / Math.max(1, prevDays);
-
-            const diff = ((curMetric - prevMetric) / prevMetric) * 100;
-            const good = diff >= 0;
-            const colorClass = good ? 'badge-green' : 'badge-red';
-            const trendText = good ? '👍 Темп выше' : '📉 Темп ниже';
-            const diffAbs = Math.abs(diff).toFixed(1);
-
-            const prevText = isPercent ? formatPerc(prevTotal) : `${formatNum(prevMetric)} / день`;
-
-            const curText = isPercent
-                ? ''
-                : `<span class="block text-[11px] font-bold text-slate-500 mb-1 border-b border-slate-100 pb-1 w-full uppercase tracking-wide">В среднем: <span class="text-slate-800">${formatNum(curMetric)}</span> в день</span>`;
-
-            return `
-                <div class="mt-3 flex flex-col items-start w-full bg-slate-50 rounded-lg p-2 border border-slate-100">
-                    ${curText}
-                    <div class="badge ${colorClass} flex flex-col gap-1 items-start w-full border-none px-2 py-1 mt-1">
-                        <span class="font-bold">${trendText} на ${diffAbs}%</span>
-                        <span class="text-[10px] font-medium opacity-80">Прошлый мес: ${prevText}</span>
-                    </div>
+        function getCompareBadge(currentTotal, prevTotal, currentDays, prevDays, isPercent = false, compareLabel = '') {
+    if (!prevTotal || isNaN(prevTotal)) {
+        return `
+            <div class="mt-3 flex flex-col items-start w-full bg-slate-50 rounded-lg p-2 border border-slate-100">
+                <div class="badge badge-neutral flex flex-col gap-1 items-start w-full border-none px-2 py-1">
+                    <span class="font-bold">Нет данных для сравнения</span>
+                    ${compareLabel ? `<span class="text-[10px] font-medium opacity-80">Сравнение: ${compareLabel}</span>` : ''}
                 </div>
-            `;
-        }
+            </div>
+        `;
+    }
 
+    const curMetric = isPercent ? currentTotal : currentTotal / Math.max(1, currentDays);
+    const prevMetric = isPercent ? prevTotal : prevTotal / Math.max(1, prevDays);
+
+    const diff = ((curMetric - prevMetric) / prevMetric) * 100;
+    const good = diff >= 0;
+    const colorClass = good ? 'badge-green' : 'badge-red';
+    const trendText = good ? '👍 Темп выше' : '📉 Темп ниже';
+    const diffAbs = Math.abs(diff).toFixed(1);
+
+    const prevText = isPercent ? formatPerc(prevTotal) : `${formatNum(prevMetric)} / день`;
+
+    const curText = isPercent
+        ? ''
+        : `<span class="block text-[11px] font-bold text-slate-500 mb-1 border-b border-slate-100 pb-1 w-full uppercase tracking-wide">
+            В среднем: <span class="text-slate-800">${formatNum(curMetric)}</span> в день
+        </span>`;
+
+    return `
+        <div class="mt-3 flex flex-col items-start w-full bg-slate-50 rounded-lg p-2 border border-slate-100">
+            ${curText}
+            <div class="badge ${colorClass} flex flex-col gap-1 items-start w-full border-none px-2 py-1 mt-1">
+                <span class="font-bold">${trendText} на ${diffAbs}%</span>
+                <span class="text-[10px] font-medium opacity-80">Сравнение: ${compareLabel || 'аналогичный период'}</span>
+                <span class="text-[10px] font-medium opacity-80">Прошлый период: ${prevText}</span>
+            </div>
+        </div>
+    `;
+}
         function channelName(monthIndex, cKey) {
             const cNum = Number(String(cKey).replace('c', ''));
             return monthsData[monthIndex]?.smmChannels?.[cNum]?.name || `Канал ${cNum + 1}`;
@@ -917,33 +960,36 @@
 
                 const current = extractSMMRange(monthIndex, selectedStart, actualEnd, channelFilter);
 
-                const prevRange = getPreviousFullMonthRange(selectedStart);
-                const prevMonthIndex = findMonthIndexByDate(prevRange.start);
+                const prevRange = getPreviousAnalogRange(selectedStart, selectedEnd);
+const prevActualEnd = prevRange.end;
 
-                const prev = prevMonthIndex >= 0
-                    ? extractSMMRange(prevMonthIndex, prevRange.start, prevRange.end, channelFilter)
-                    : null;
+const prevMonthIndex = findMonthIndexByDate(prevRange.start);
 
-                const currentDays = daysBetweenInclusive(selectedStart, actualEnd);
-                const prevDays = daysBetweenInclusive(prevRange.start, prevRange.end);
+const prev = prevMonthIndex >= 0
+    ? extractSMMRange(prevMonthIndex, prevRange.start, prevActualEnd, channelFilter)
+    : null;
+
+const currentDays = daysBetweenInclusive(selectedStart, actualEnd);
+const prevDays = daysBetweenInclusive(prevRange.start, prevActualEnd);
+const compareLabel = prevRange.label;
 
                 document.getElementById('val-reach').innerText = formatNum(current.reach.tot);
-                document.getElementById('diff-reach').innerHTML = getCompareBadge(current.reach.tot, prev?.reach?.tot, currentDays, prevDays);
+                document.getElementById('diff-reach').innerHTML = getCompareBadge(current.reach.tot, prev?.reach?.tot, currentDays, prevDays, false, compareLabel);
                 renderPie('pie-reach', current.reach.byC, monthIndex);
                 renderLine('line-reach', current.labels, current.reach.t, '#8b5cf6');
 
                 document.getElementById('val-leads').innerText = formatNum(current.leads.tot);
-                document.getElementById('diff-leads').innerHTML = getCompareBadge(current.leads.tot, prev?.leads?.tot, currentDays, prevDays);
+                document.getElementById('diff-leads').innerHTML = getCompareBadge(current.leads.tot, prev?.leads?.tot, currentDays, prevDays, false, compareLabel);
                 renderPie('pie-leads', current.leads.byC, monthIndex);
                 renderLine('line-leads', current.labels, current.leads.t, '#3b82f6');
 
                 document.getElementById('val-subs').innerText = formatNum(current.subs.tot);
-                document.getElementById('diff-subs').innerHTML = getCompareBadge(current.subs.tot, prev?.subs?.tot, currentDays, prevDays);
+                document.getElementById('diff-subs').innerHTML = getCompareBadge(current.subs.tot, prev?.subs?.tot, currentDays, prevDays, false, compareLabel);
                 renderPie('pie-subs', current.subs.byC, monthIndex);
                 renderLine('line-subs', current.labels, current.subs.t, '#10b981');
 
                 document.getElementById('val-err').innerText = formatPerc(current.err.tot);
-                document.getElementById('diff-err').innerHTML = getCompareBadge(current.err.tot, prev?.err?.tot, currentDays, prevDays, true);
+                document.getElementById('diff-err').innerHTML = getCompareBadge(current.err.tot, prev?.err?.tot, currentDays, prevDays, true, compareLabel);
                 renderPie('pie-err', current.err.byC, monthIndex, true);
                 renderLine('line-err', current.labels, current.err.t, '#64748b', true);
 
