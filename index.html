@@ -121,6 +121,58 @@
             background: #fee2e2;
             color: #991b1b;
         }
+
+        .channel-share-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .channel-share-row {
+            width: 100%;
+        }
+
+        .channel-share-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 5px;
+        }
+
+        .channel-share-name {
+            min-width: 0;
+            flex: 1;
+            color: #334155;
+            font-size: 12px;
+            font-weight: 800;
+            line-height: 1.2;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+
+        .channel-share-value {
+            flex: none;
+            color: #0f172a;
+            font-size: 12px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .channel-share-track {
+            width: 100%;
+            height: 9px;
+            background: #eef2f7;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .channel-share-fill {
+            height: 100%;
+            border-radius: 999px;
+            min-width: 2px;
+        }
     </style>
 </head>
 
@@ -196,9 +248,7 @@
 
                         <div class="flex-1 relative min-h-[190px] lg:border-l lg:border-r border-slate-100 px-4">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3 block">Доли каналов</span>
-                            <div class="w-full h-[165px] relative">
-                                <canvas id="pie-reach"></canvas>
-                            </div>
+                            <div id="pie-reach" class="channel-share-list"></div>
                         </div>
 
                         <div class="flex-[2] relative min-h-[190px]">
@@ -221,9 +271,7 @@
 
                         <div class="flex-1 relative min-h-[190px] lg:border-l lg:border-r border-slate-100 px-4">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3 block">Доли каналов</span>
-                            <div class="w-full h-[165px] relative">
-                                <canvas id="pie-leads"></canvas>
-                            </div>
+                            <div id="pie-leads" class="channel-share-list"></div>
                         </div>
 
                         <div class="flex-[2] relative min-h-[190px]">
@@ -246,9 +294,7 @@
 
                         <div class="flex-1 relative min-h-[190px] lg:border-l lg:border-r border-slate-100 px-4">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3 block">Доли каналов</span>
-                            <div class="w-full h-[165px] relative">
-                                <canvas id="pie-subs"></canvas>
-                            </div>
+                            <div id="pie-subs" class="channel-share-list"></div>
                         </div>
 
                         <div class="flex-[2] relative min-h-[190px]">
@@ -268,9 +314,7 @@
 
                         <div class="flex-1 relative min-h-[190px] lg:border-l lg:border-r border-slate-100 px-4">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3 block">ERR по каналам</span>
-                            <div class="w-full h-[165px] relative">
-                                <canvas id="pie-err"></canvas>
-                            </div>
+                            <div id="pie-err" class="channel-share-list"></div>
                         </div>
 
                         <div class="flex-[2] relative min-h-[190px]">
@@ -585,7 +629,6 @@
                 labels: Array.from({ length: dayCount }, (_, i) => {
                     const d = new Date(safeStart);
                     d.setDate(safeStart.getDate() + i);
-
                     return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
                 }),
                 reach: initMetricBucket(dayCount),
@@ -595,10 +638,7 @@
             };
 
             const month = monthsData[monthIndex];
-
-            if (!month) {
-                return result;
-            }
+            if (!month) return result;
 
             const { year, monthIndex: monthIndex0 } = getMonthYear(month);
             const channels = month.smmChannels || [];
@@ -611,9 +651,7 @@
                 result.subs.byC[cKey] ??= 0;
                 result.err.byCErr[cKey] ??= { weighted: 0, weight: 0, sum: 0, count: 0 };
 
-                if (channelFilter !== 'all' && channelFilter !== cKey) {
-                    return;
-                }
+                if (channelFilter !== 'all' && channelFilter !== cKey) return;
 
                 const metrics = channel.metrics || [];
                 const reachMetric = metrics.find(isReachMetric);
@@ -623,9 +661,7 @@
                     (week.days || []).forEach((day, dI) => {
                         const realDate = dateOnly(new Date(year, monthIndex0, Number(day.num)));
 
-                        if (realDate < safeStart || realDate > safeEnd) {
-                            return;
-                        }
+                        if (realDate < safeStart || realDate > safeEnd) return;
 
                         const tIdx = daysBetweenInclusive(safeStart, realDate) - 1;
 
@@ -633,9 +669,7 @@
                             const metricSlug = slugify(metricName);
                             const key = `smm_m${monthIndex}_c${cI}_w${wI}_d${dI}_${metricSlug}`;
 
-                            if (!(key in inputState)) {
-                                return;
-                            }
+                            if (!(key in inputState)) return;
 
                             const val = Number(inputState[key]) || 0;
 
@@ -759,17 +793,16 @@
 
         function channelName(monthIndex, cKey) {
             const cNum = Number(String(cKey).replace('c', ''));
-
             return monthsData[monthIndex]?.smmChannels?.[cNum]?.name || `Канал ${cNum + 1}`;
         }
 
         function renderPie(id, dataObj, monthIndex, isAverage = false) {
-            const canvas = document.getElementById(id);
-
-            if (!canvas) return;
+            const box = document.getElementById(id);
+            if (!box) return;
 
             if (smmCharts[id]) {
                 smmCharts[id].destroy();
+                delete smmCharts[id];
             }
 
             const defaultColors = [
@@ -797,128 +830,37 @@
             rows.sort((a, b) => b.value - a.value);
 
             if (!rows.length) {
-                rows.push({
-                    key: 'empty',
-                    name: 'Нет данных',
-                    value: 0,
-                    color: '#e2e8f0'
-                });
+                box.innerHTML = `
+                    <div class="text-xs font-bold text-slate-400 bg-slate-50 rounded-xl p-4">
+                        Нет данных
+                    </div>
+                `;
+                return;
             }
 
             const total = rows.reduce((sum, row) => sum + row.value, 0);
+            const maxValue = Math.max(...rows.map(row => row.value), 1);
 
-            const labels = rows.map(row => {
-                if (row.name === 'Нет данных') {
-                    return 'Нет данных';
-                }
-
+            box.innerHTML = rows.map(row => {
                 const share = total > 0 ? (row.value / total) * 100 : 0;
-                const shownValue = isAverage ? `${row.value.toFixed(1)}%` : formatNum(row.value);
+                const width = Math.max(1, (row.value / maxValue) * 100);
 
-                return `${row.name} · ${shownValue} · ${share.toFixed(1)}%`;
-            });
+                const shownValue = isAverage
+                    ? `${row.value.toFixed(2)}%`
+                    : formatNum(row.value);
 
-            const values = rows.map(row => row.value);
-            const colors = rows.map(row => row.color);
-
-            smmCharts[id] = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels,
-                    datasets: [{
-                        data: values,
-                        backgroundColor: colors,
-                        borderRadius: 999,
-                        borderSkipped: false,
-                        barThickness: 14,
-                        maxBarThickness: 18
-                    }]
-                },
-                plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    layout: {
-                        padding: {
-                            right: 34,
-                            left: 0,
-                            top: 0,
-                            bottom: 0
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                title: function(context) {
-                                    return rows[context[0].dataIndex]?.name || '';
-                                },
-                                label: function(context) {
-                                    const row = rows[context.dataIndex];
-                                    const value = row?.value || 0;
-                                    const share = total > 0 ? (value / total) * 100 : 0;
-                                    const shownValue = isAverage ? `${value.toFixed(2)}%` : formatNum(value);
-
-                                    return `Значение: ${shownValue}; Доля: ${share.toFixed(1)}%`;
-                                }
-                            }
-                        },
-                        datalabels: {
-                            anchor: 'end',
-                            align: 'right',
-                            clamp: true,
-                            color: '#0f172a',
-                            font: {
-                                family: 'Inter',
-                                weight: '800',
-                                size: 10
-                            },
-                            formatter: function(value, context) {
-                                const row = rows[context.dataIndex];
-
-                                if (!row || row.name === 'Нет данных') return '';
-
-                                const share = total > 0 ? (value / total) * 100 : 0;
-
-                                if (isAverage) {
-                                    return `${value.toFixed(1)}%`;
-                                }
-
-                                return `${share.toFixed(1)}%`;
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            beginAtZero: true,
-                            display: false,
-                            grid: {
-                                display: false
-                            }
-                        },
-                        y: {
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                color: '#334155',
-                                font: {
-                                    family: 'Inter',
-                                    size: 10,
-                                    weight: '800'
-                                },
-                                callback: function(value) {
-                                    const label = this.getLabelForValue(value);
-                                    return label.length > 36 ? label.slice(0, 36) + '…' : label;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
+                return `
+                    <div class="channel-share-row">
+                        <div class="channel-share-top">
+                            <div class="channel-share-name">${row.name}</div>
+                            <div class="channel-share-value">${shownValue} · ${share.toFixed(1)}%</div>
+                        </div>
+                        <div class="channel-share-track">
+                            <div class="channel-share-fill" style="width:${width}%; background:${row.color};"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function renderLine(id, labels, timelineArray, color, isPercent = false) {
