@@ -65,14 +65,11 @@
                         <span class="filter-label">Рекламный канал</span>
                         <select id="current-channel" class="filter-input w-full sm:w-auto min-w-[180px]">
                             <option value="all">Все каналы</option>
-                            <option value="c0">Instagram</option>
-                            <option value="c1">Telegram</option>
-                            <option value="c2">VK</option>
-                            <option value="c3">Dzen</option>
-                            <option value="c4">YouTube</option>
                         </select>
                     </div>
                 </div>
+
+                <div id="error-container" class="hidden mb-6 bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl text-sm font-medium"></div>
 
                 <div class="flex flex-col gap-6">
                     
@@ -80,7 +77,7 @@
                         <div class="flex-1 min-w-[200px] flex flex-col">
                             <span class="metric-title">Суммарный охват / Показы</span>
                             <div class="metric-value mt-1" id="val-reach">0</div>
-                            <div class="mt-auto" id="diff-reach"></div>
+                            <div class="mt-auto w-full" id="diff-reach"></div>
                         </div>
                         <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span>
@@ -96,7 +93,7 @@
                         <div class="flex-1 min-w-[200px] flex flex-col">
                             <span class="metric-title flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-500 block"></span>Всего лидов</span>
                             <div class="metric-value text-blue-600 mt-1" id="val-leads">0</div>
-                            <div class="mt-auto" id="diff-leads"></div>
+                            <div class="mt-auto w-full" id="diff-leads"></div>
                         </div>
                         <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span>
@@ -112,7 +109,7 @@
                         <div class="flex-1 min-w-[200px] flex flex-col">
                             <span class="metric-title flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500 block"></span>Приток подписчиков</span>
                             <div class="metric-value mt-1" id="val-subs">0</div>
-                            <div class="mt-auto" id="diff-subs"></div>
+                            <div class="mt-auto w-full" id="diff-subs"></div>
                         </div>
                         <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span>
@@ -128,7 +125,7 @@
                         <div class="flex-1 min-w-[200px] flex flex-col">
                             <span class="metric-title">Средний уровень ERR</span>
                             <div class="metric-value text-slate-700 mt-1" id="val-err">0%</div>
-                            <div class="mt-auto" id="diff-err"></div>
+                            <div class="mt-auto w-full" id="diff-err"></div>
                         </div>
                         <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">ERR по каналам</span>
@@ -146,7 +143,7 @@
 
         <main class="scroll-area hidden" id="view-global">
             <div class="max-w-7xl mx-auto p-4 sm:p-6">
-                </div>
+            </div>
         </main>
     </div>
 
@@ -171,7 +168,7 @@
         const provider = new GoogleAuthProvider();
 
         let rawData = null; 
-        window.monthsData = []; 
+        window.monthsData = null; 
         let datePicker = null; 
         window.smmCharts = {};
 
@@ -196,36 +193,69 @@
         const formatNum = (num) => new Intl.NumberFormat('ru-RU').format(Math.round(num || 0));
         const formatPerc = (num) => (num || 0).toFixed(2) + '%';
 
-        function getCompareBadge(current, prev, isPercent = false) {
-            if (prev === 0 || prev === undefined || isNaN(prev)) return `<div class="badge badge-neutral mt-2">Нет данных за прошлый месяц</div>`;
-            const diff = ((current - prev) / prev) * 100;
-            const colorClass = diff >= 0 ? 'badge-green' : 'badge-red';
-            const trendText = diff >= 0 ? '👍 Лучше' : '📉 Хуже';
-            const diffAbs = Math.abs(diff).toFixed(1);
-            const prevText = isPercent ? prev.toFixed(2) + '%' : formatNum(prev);
-            return `<div class="badge ${colorClass} mt-3 flex flex-col gap-1 items-start"><span>${trendText} на ${diffAbs}%</span><span class="text-[10px] font-normal opacity-70">Прошлый месяц: ${prevText}</span></div>`;
+        // Функция для вычисления "Дней с начала периода" (учитывает текущий день)
+        function getDaysPassed(dateStart, dateEnd) {
+            const today = new Date();
+            let end = dateEnd;
+            if (dateEnd > today) end = today; // Если конец в будущем - обрезаем по сегодня
+            if (dateStart > today) return 1; // Защита от будущих месяцев
+            const diffTime = Math.abs(end - dateStart);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            return Math.max(1, diffDays);
         }
 
-        // --- ДИНАМИЧЕСКИЙ РЕНДЕР КРУГОВЫХ ДИАГРАММ ---
+        // Обновленный бейдж сравнения по среднедневному темпу
+        function getCompareBadge(currentTotal, prevTotal, currentDays, prevDays, isPercent = false) {
+            if (prevTotal === 0 || prevTotal === undefined || isNaN(prevTotal)) return `<div class="badge badge-neutral mt-2">Нет данных за прошлый месяц</div>`;
+            
+            let currentMetric = currentTotal;
+            let prevMetric = prevTotal;
+            
+            // Если это не проценты (не ERR), считаем среднедневное значение
+            if (!isPercent) {
+                currentMetric = currentTotal / Math.max(1, currentDays);
+                prevMetric = prevTotal / Math.max(1, prevDays);
+            }
+
+            const diff = ((currentMetric - prevMetric) / prevMetric) * 100;
+            const colorClass = diff >= 0 ? 'badge-green' : 'badge-red';
+            const trendText = diff >= 0 ? '👍 Темп выше' : '📉 Темп ниже';
+            const diffAbs = Math.abs(diff).toFixed(1);
+            
+            let prevText = isPercent ? prevTotal.toFixed(2) + '%' : formatNum(prevMetric) + ' / день';
+            let currentDailyHtml = '';
+            
+            if (!isPercent) {
+                currentDailyHtml = `<span class="block text-[11px] font-bold text-slate-500 mb-1 border-b border-slate-100 pb-1 w-full uppercase tracking-wide">В среднем: <span class="text-slate-800">${formatNum(currentMetric)}</span> в день</span>`;
+            }
+
+            return `
+                <div class="mt-3 flex flex-col items-start w-full bg-slate-50 rounded-lg p-2 border border-slate-100">
+                    ${currentDailyHtml}
+                    <div class="badge ${colorClass} flex flex-col gap-1 items-start w-full border-none px-2 py-1 mt-1">
+                        <span class="font-bold">${trendText} на ${diffAbs}%</span>
+                        <span class="text-[10px] font-medium opacity-80">Прошлый мес: ${prevText}</span>
+                    </div>
+                </div>
+            `;
+        }
+
         function renderPie(id, dataObj, monthIndex, isAverage = false) {
             const canvas = document.getElementById(id);
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             if (window.smmCharts[id]) window.smmCharts[id].destroy();
             
-            // Расширенная палитра для неограниченного числа каналов
             const defaultColors = ['#e1306c', '#0088cc', '#0077ff', '#10b981', '#ff0000', '#8b5cf6', '#f59e0b', '#14b8a6', '#f43f5e', '#64748b'];
-
             const fLabels = [], fValues = [], fColors = [];
             
             Object.keys(dataObj).forEach(cKey => {
                 const v = dataObj[cKey];
                 if (v > 0) {
-                    let cName = cKey; // По умолчанию 'c0', 'c1' и тд
+                    let cName = cKey;
                     const cNum = parseInt(cKey.replace('c', ''));
                     
-                    // Пытаемся получить реальное имя канала из массива месяцев
-                    if (!isNaN(cNum) && window.monthsData[monthIndex] && window.monthsData[monthIndex].smmChannels && window.monthsData[monthIndex].smmChannels[cNum]) {
+                    if (!isNaN(cNum) && window.monthsData && window.monthsData[monthIndex] && window.monthsData[monthIndex].smmChannels && window.monthsData[monthIndex].smmChannels[cNum]) {
                         cName = window.monthsData[monthIndex].smmChannels[cNum].name;
                     } else if (!isNaN(cNum)) {
                         cName = `Канал ${cNum + 1}`;
@@ -280,19 +310,21 @@
             document.getElementById('current-month-label').innerText = monthName.charAt(0).toUpperCase() + monthName.slice(1);
         }
 
-        // --- ДИНАМИЧЕСКИЙ ДРОПДАУН КАНАЛОВ ---
+        // Обновление дропдауна с безопасной проверкой объекта/массива
         function updateChannelDropdown(monthIndex, currentSelection) {
             const select = document.getElementById('current-channel');
             select.innerHTML = '<option value="all">Все каналы</option>';
             
-            if (window.monthsData[monthIndex] && window.monthsData[monthIndex].smmChannels) {
-                window.monthsData[monthIndex].smmChannels.forEach((ch, idx) => {
+            if (window.monthsData && window.monthsData[monthIndex] && window.monthsData[monthIndex].smmChannels) {
+                const channels = window.monthsData[monthIndex].smmChannels;
+                for (let key in channels) {
+                    if (!channels[key]) continue;
                     const opt = document.createElement('option');
-                    opt.value = `c${idx}`;
-                    opt.innerText = ch.name;
-                    if (`c${idx}` === currentSelection) opt.selected = true;
+                    opt.value = `c${key}`;
+                    opt.innerText = channels[key].name;
+                    if (`c${key}` === currentSelection) opt.selected = true;
                     select.appendChild(opt);
-                });
+                }
             }
         }
 
@@ -323,7 +355,8 @@
                     const data = snapshot.val();
                     if(data) {
                         rawData = data.inputState || {};
-                        window.monthsData = data.monthsData || [];
+                        window.monthsData = data.monthsData || {};
+                        document.getElementById('error-container').classList.add('hidden');
                         processCurrentMonthData();
                     }
                 }, (error) => { alert("Доступ запрещен. Проверьте права в Firebase."); });
@@ -340,9 +373,15 @@
                 const ruMonths = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
                 const targetString = `${ruMonths[targetDate.getMonth()]} ${targetDate.getFullYear()}`;
                 
+                // Безопасный поиск месяца (работает и с массивами, и с объектами Firebase)
                 let monthIndex = -1;
-                if (window.monthsData && window.monthsData.length > 0) {
-                    monthIndex = window.monthsData.findIndex(m => m.name === targetString);
+                if (window.monthsData) {
+                    for (let key in window.monthsData) {
+                        if (window.monthsData[key] && window.monthsData[key].name === targetString) {
+                            monthIndex = parseInt(key);
+                            break;
+                        }
+                    }
                 }
                 if (monthIndex === -1) {
                     monthIndex = (targetDate.getFullYear() - 2026) * 12 + targetDate.getMonth();
@@ -351,14 +390,17 @@
                 const curPrefix = `m${monthIndex}`;
                 const prevPrefix = `m${Math.max(0, monthIndex - 1)}`;
                 
-                // Сохраняем текущий выбор фильтра перед его обновлением
                 const channelFilterEl = document.getElementById('current-channel');
                 const channelFilter = channelFilterEl.value;
-                
-                // Обновляем список фильтров для выбранного месяца
                 updateChannelDropdown(monthIndex, channelFilter);
 
-                // --- УМНЫЙ ЭКСТРАКТОР ДАННЫХ ---
+                // Расчет количества дней для сравнения (PACE)
+                const currentDays = getDaysPassed(selectedDates[0], selectedDates[1]);
+                const prevStart = new Date(selectedDates[0]);
+                prevStart.setMonth(prevStart.getMonth() - 1);
+                const prevEnd = new Date(prevStart.getFullYear(), prevStart.getMonth() + 1, 0);
+                const prevDays = getDaysPassed(prevStart, prevEnd);
+
                 const extract = (mPrefix) => {
                     let m = { 
                         reach: { tot: 0, byC: {}, t: Array(42).fill(0) },
@@ -374,15 +416,13 @@
                         if (parts.length !== 6 || !parts[4].startsWith('d')) return;
 
                         const cIdx = parts[2]; 
-                        if (!cIdx.startsWith('c')) return; // Игнорируем технические ключи (вроде c-1)
+                        if (!cIdx.startsWith('c')) return; 
                         
-                        // Инициализируем канал "на лету", если его еще нет
                         m.reach.byC[cIdx] = m.reach.byC[cIdx] || 0;
                         m.leads.byC[cIdx] = m.leads.byC[cIdx] || 0;
                         m.subs.byC[cIdx] = m.subs.byC[cIdx] || 0;
                         m.err.byC[cIdx] = m.err.byC[cIdx] || {s: 0, c: 0};
 
-                        // Проверка фильтра
                         if (channelFilter !== 'all' && cIdx !== channelFilter) return;
 
                         const wIdx = parseInt(parts[3].replace('w', ''));
@@ -406,7 +446,6 @@
                         }
                     });
 
-                    // Усреднение ERR для всех найденных каналов
                     let errSum = 0, errCount = 0;
                     Object.keys(m.err.byC).forEach(c => {
                         if (m.err.byC[c].c > 0) {
@@ -427,26 +466,29 @@
                 const prev = extract(prevPrefix);
 
                 document.getElementById('val-reach').innerText = formatNum(current.reach.tot);
-                document.getElementById('diff-reach').innerHTML = getCompareBadge(current.reach.tot, prev.reach.tot);
+                document.getElementById('diff-reach').innerHTML = getCompareBadge(current.reach.tot, prev.reach.tot, currentDays, prevDays);
                 renderPie('pie-reach', current.reach.byC, monthIndex);
                 renderLine('line-reach', current.reach.t, '#8b5cf6');
 
                 document.getElementById('val-leads').innerText = formatNum(current.leads.tot);
-                document.getElementById('diff-leads').innerHTML = getCompareBadge(current.leads.tot, prev.leads.tot);
+                document.getElementById('diff-leads').innerHTML = getCompareBadge(current.leads.tot, prev.leads.tot, currentDays, prevDays);
                 renderPie('pie-leads', current.leads.byC, monthIndex);
                 renderLine('line-leads', current.leads.t, '#3b82f6');
 
                 document.getElementById('val-subs').innerText = formatNum(current.subs.tot);
-                document.getElementById('diff-subs').innerHTML = getCompareBadge(current.subs.tot, prev.subs.tot);
+                document.getElementById('diff-subs').innerHTML = getCompareBadge(current.subs.tot, prev.subs.tot, currentDays, prevDays);
                 renderPie('pie-subs', current.subs.byC, monthIndex);
                 renderLine('line-subs', current.subs.t, '#10b981');
 
                 document.getElementById('val-err').innerText = formatPerc(current.err.tot);
-                document.getElementById('diff-err').innerHTML = getCompareBadge(current.err.tot, prev.err.tot, true);
+                document.getElementById('diff-err').innerHTML = getCompareBadge(current.err.tot, prev.err.tot, currentDays, prevDays, true);
                 renderPie('pie-err', current.err.byC, monthIndex, true);
                 renderLine('line-err', current.err.t, '#64748b', true);
                 
             } catch (error) {
+                const errEl = document.getElementById('error-container');
+                errEl.innerText = `Критическая ошибка расчетов: ${error.message}`;
+                errEl.classList.remove('hidden');
                 console.error("Ошибка при расчете метрик:", error);
             }
         }
