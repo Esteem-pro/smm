@@ -454,37 +454,23 @@
             return `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}`;
         }
 
-        function isFullMonthRange(startDate, endDate) {
+        function getPreviousAnalogRange(startDate, endDate) {
             const start = dateOnly(startDate);
             const end = dateOnly(endDate);
+            const durationDays = daysBetweenInclusive(start, end);
 
-            const firstDay = new Date(start.getFullYear(), start.getMonth(), 1);
-            const lastDay = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+            const prevEnd = new Date(start);
+            prevEnd.setDate(start.getDate() - 1);
 
-            return (
-                start.getTime() === firstDay.getTime() &&
-                end.getTime() === lastDay.getTime()
-            );
+            const prevStart = new Date(prevEnd);
+            prevStart.setDate(prevEnd.getDate() - durationDays + 1);
+
+            return {
+                start: prevStart,
+                end: prevEnd,
+                label: `${formatShortDate(prevStart)}–${formatShortDate(prevEnd)}`
+            };
         }
-
-        function getPreviousAnalogRange(startDate, endDate) {
-    const start = dateOnly(startDate);
-    const end = dateOnly(endDate);
-
-    const durationDays = daysBetweenInclusive(start, end);
-
-    const prevEnd = new Date(start);
-    prevEnd.setDate(start.getDate() - 1);
-
-    const prevStart = new Date(prevEnd);
-    prevStart.setDate(prevEnd.getDate() - durationDays + 1);
-
-    return {
-        start: prevStart,
-        end: prevEnd,
-        label: `${formatShortDate(prevStart)}–${formatShortDate(prevEnd)}`
-    };
-}
 
         function getActualEndDate(startDate, endDate) {
             const today = todayOnly();
@@ -739,6 +725,94 @@
             return result;
         }
 
+        function extractSMMRangeMultiMonth(startDate, endDate, channelFilter = 'all') {
+            const safeStart = dateOnly(startDate);
+            const safeEnd = dateOnly(endDate);
+            const dayCount = daysBetweenInclusive(safeStart, safeEnd);
+
+            const merged = {
+                labels: Array.from({ length: dayCount }, (_, i) => {
+                    const d = new Date(safeStart);
+                    d.setDate(safeStart.getDate() + i);
+                    return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+                }),
+                reach: initMetricBucket(dayCount),
+                leads: initMetricBucket(dayCount),
+                subs: initMetricBucket(dayCount),
+                err: initMetricBucket(dayCount)
+            };
+
+            monthsData.forEach((month, monthIndex) => {
+                const { year, monthIndex: monthIndex0 } = getMonthYear(month);
+
+                if (!Number.isFinite(year) || monthIndex0 < 0) return;
+
+                const monthStart = dateOnly(new Date(year, monthIndex0, 1));
+                const monthEnd = dateOnly(new Date(year, monthIndex0 + 1, 0));
+
+                if (monthEnd < safeStart || monthStart > safeEnd) return;
+
+                const partStart = monthStart < safeStart ? safeStart : monthStart;
+                const partEnd = monthEnd > safeEnd ? safeEnd : monthEnd;
+
+                const part = extractSMMRange(monthIndex, partStart, partEnd, channelFilter);
+
+                part.labels.forEach((_, localIdx) => {
+                    const currentDate = new Date(partStart);
+                    currentDate.setDate(partStart.getDate() + localIdx);
+
+                    const globalIdx = daysBetweenInclusive(safeStart, currentDate) - 1;
+
+                    if (globalIdx < 0 || globalIdx >= dayCount) return;
+
+                    merged.reach.t[globalIdx] += part.reach.t[localIdx] || 0;
+                    merged.leads.t[globalIdx] += part.leads.t[localIdx] || 0;
+                    merged.subs.t[globalIdx] += part.subs.t[localIdx] || 0;
+                    merged.err.t[globalIdx] = part.err.t[localIdx] || merged.err.t[globalIdx] || 0;
+                });
+
+                ['reach', 'leads', 'subs'].forEach(metric => {
+                    merged[metric].tot += part[metric].tot || 0;
+
+                    Object.keys(part[metric].byC || {}).forEach(cKey => {
+                        merged[metric].byC[cKey] = (merged[metric].byC[cKey] || 0) + (part[metric].byC[cKey] || 0);
+                    });
+                });
+
+                merged.err.errWeighted += part.err.errWeighted || 0;
+                merged.err.errWeight += part.err.errWeight || 0;
+                merged.err.errSimpleSum += part.err.errSimpleSum || 0;
+                merged.err.errSimpleCount += part.err.errSimpleCount || 0;
+
+                Object.keys(part.err.byC || {}).forEach(cKey => {
+                    if (!merged.err.byCErr[cKey]) {
+                        merged.err.byCErr[cKey] = { weighted: 0, weight: 0, sum: 0, count: 0 };
+                    }
+
+                    const val = part.err.byC[cKey] || 0;
+
+                    if (val > 0) {
+                        merged.err.byCErr[cKey].sum += val;
+                        merged.err.byCErr[cKey].count += 1;
+                    }
+                });
+            });
+
+            Object.keys(merged.err.byCErr).forEach(cKey => {
+                const item = merged.err.byCErr[cKey];
+
+                merged.err.byC[cKey] = item.weight > 0
+                    ? item.weighted / item.weight
+                    : (item.count > 0 ? item.sum / item.count : 0);
+            });
+
+            merged.err.tot = merged.err.errWeight > 0
+                ? merged.err.errWeighted / merged.err.errWeight
+                : (merged.err.errSimpleCount > 0 ? merged.err.errSimpleSum / merged.err.errSimpleCount : 0);
+
+            return merged;
+        }
+
         function getCompareBadge(currentTotal, prevTotal, currentDays, prevDays, isPercent = false, compareLabel = '') {
             if (!prevTotal || isNaN(prevTotal)) {
                 return `
@@ -980,14 +1054,15 @@
 
                 const channelFilter = channelFilterEl.value;
 
-                const current = extractSMMRange(monthIndex, selectedStart, actualEnd, channelFilter);
+                const current = extractSMMRangeMultiMonth(selectedStart, actualEnd, channelFilter);
 
-                const prevRange = getPreviousAnalogRange(selectedStart, selectedEnd);
-                const prevMonthIndex = findMonthIndexByDate(prevRange.start);
+                const prevRange = getPreviousAnalogRange(selectedStart, actualEnd);
 
-                const prev = prevMonthIndex >= 0
-                    ? extractSMMRange(prevMonthIndex, prevRange.start, prevRange.end, channelFilter)
-                    : null;
+                const prev = extractSMMRangeMultiMonth(
+                    prevRange.start,
+                    prevRange.end,
+                    channelFilter
+                );
 
                 const currentDays = daysBetweenInclusive(selectedStart, actualEnd);
                 const prevDays = daysBetweenInclusive(prevRange.start, prevRange.end);
@@ -1069,7 +1144,7 @@
 
                 labels.push(String(m.name || '').replace(' 2026', ''));
 
-                const data = extractSMMRange(mI, start, actualEnd, 'all');
+                const data = extractSMMRangeMultiMonth(start, actualEnd, 'all');
 
                 reach.push(data.reach.tot);
                 leads.push(data.leads.tot);
