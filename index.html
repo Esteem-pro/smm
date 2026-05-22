@@ -15,31 +15,129 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-        .glass-header { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
-        .bento-card { background: #ffffff; padding: 1.5rem; border-radius: 1.5rem; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03); border: 1px solid #f1f5f9; display: flex; flex-direction: column; }
-        .scroll-area { flex: 1; overflow-y: auto; padding-bottom: 2rem; }
-        .scroll-area::-webkit-scrollbar { width: 6px; }
-        .scroll-area::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .filter-input { background: #f8fafc; border: 1px solid #e2e8f0; color: #334155; font-size: 0.875rem; font-weight: 500; border-radius: 0.75rem; padding: 0.5rem 0.75rem; outline: none; transition: all 0.2s; }
-        .filter-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
-        .filter-label { display: block; font-size: 0.75rem; font-weight: 600; color: #64748b; margin-bottom: 0.375rem; text-transform: uppercase; letter-spacing: 0.025em; }
-        .metric-title { font-size: 0.76rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
-        .metric-value { font-size: 2.15rem; line-height: 1; font-weight: 900; color: #0f172a; letter-spacing: -0.04em; }
-        .badge { display:inline-flex; align-items:center; border-radius: .65rem; padding: .28rem .55rem; font-size: .72rem; font-weight: 800; }
-        .badge-neutral { background:#f1f5f9; color:#64748b; }
-        .badge-green { background:#dcfce7; color:#166534; }
-        .badge-red { background:#fee2e2; color:#991b1b; }
-        .badge-blue { background:#dbeafe; color:#1d4ed8; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .glass-header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        .bento-card {
+            background: #ffffff;
+            padding: 1.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
+            border: 1px solid #f1f5f9;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 2rem;
+        }
+
+        .scroll-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scroll-area::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .filter-input {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #334155;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.75rem;
+            padding: 0.5rem 0.75rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .filter-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+
+        .filter-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 0.375rem;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .metric-title {
+            font-size: 0.76rem;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .metric-value {
+            font-size: 2.15rem;
+            line-height: 1;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: -0.04em;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: .65rem;
+            padding: .28rem .55rem;
+            font-size: .72rem;
+            font-weight: 800;
+        }
+
+        .badge-neutral {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .badge-green {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-red {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-blue {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
     </style>
 </head>
+
 <body class="antialiased">
 
     <div id="auth-screen" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white p-8 rounded-[2rem] shadow-2xl max-w-sm w-full relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-cyan-400"></div>
             <h2 class="text-2xl font-extrabold mt-2 text-slate-900">Вход (SMM)</h2>
-            <p class="mt-2 text-sm text-slate-500">Дашборд читает данные из существующей ветки <b>kpi_project</b>.</p>
+            <p class="mt-2 text-sm text-slate-500">
+                Дашборд читает данные из существующей ветки <b>kpi_project</b>.
+            </p>
             <button id="login-btn" class="w-full mt-6 bg-slate-900 text-white p-3.5 rounded-xl font-bold flex justify-center items-center h-14 transition hover:bg-slate-800">
                 Войти через Google
             </button>
@@ -47,21 +145,30 @@
     </div>
 
     <div id="dashboard-screen" class="hidden h-full flex flex-col w-full">
+
         <header class="glass-header sticky top-0 z-40 px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">SMM Аналитика: <span id="current-month-label" class="text-blue-600">...</span></h1>
+                <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">
+                    SMM Аналитика: <span id="current-month-label" class="text-blue-600">...</span>
+                </h1>
                 <div id="sync-status" class="text-xs font-bold text-slate-400 mt-1">Ожидание Firebase...</div>
             </div>
+
             <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
                 <div class="bg-slate-200/50 p-1 rounded-xl flex text-sm font-semibold w-full sm:w-auto overflow-x-auto">
-                    <button id="tab-current" onclick="switchTab('current')" class="px-4 py-2 bg-white text-slate-900 shadow-sm rounded-lg flex-1 sm:flex-none whitespace-nowrap transition-all">Текущий месяц</button>
-                    <button id="tab-global" onclick="switchTab('global')" class="px-4 py-2 text-slate-500 hover:text-slate-900 rounded-lg flex-1 sm:flex-none whitespace-nowrap transition-all">Общая динамика</button>
+                    <button id="tab-current" onclick="switchTab('current')" class="px-4 py-2 bg-white text-slate-900 shadow-sm rounded-lg flex-1 sm:flex-none whitespace-nowrap transition-all">
+                        Текущий месяц
+                    </button>
+                    <button id="tab-global" onclick="switchTab('global')" class="px-4 py-2 text-slate-500 hover:text-slate-900 rounded-lg flex-1 sm:flex-none whitespace-nowrap transition-all">
+                        Общая динамика
+                    </button>
                 </div>
             </div>
         </header>
 
         <main class="scroll-area" id="view-current">
             <div class="max-w-7xl mx-auto p-4 sm:p-6">
+
                 <div class="flex flex-col sm:flex-row gap-4 mb-6 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
                     <div class="flex gap-4 flex-1">
                         <div class="w-full sm:w-auto">
@@ -69,6 +176,7 @@
                             <input type="text" id="current-date-range" class="filter-input w-full sm:w-64" placeholder="Выберите диапазон дат...">
                         </div>
                     </div>
+
                     <div>
                         <span class="filter-label">SMM канал</span>
                         <select id="current-channel" class="filter-input w-full sm:w-auto min-w-[180px]">
@@ -80,29 +188,101 @@
                 <div id="error-container" class="hidden mb-6 bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl text-sm font-medium"></div>
 
                 <div class="flex flex-col gap-6">
+
                     <div class="bento-card flex flex-col lg:flex-row gap-6 p-6">
-                        <div class="flex-1 min-w-[200px] flex flex-col"><span class="metric-title">Суммарный охват / показы / просмотры</span><div class="metric-value mt-1" id="val-reach">0</div><div class="mt-auto w-full" id="diff-reach"></div></div>
-                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span><div class="w-full h-[120px] relative"><canvas id="pie-reach"></canvas></div></div>
-                        <div class="flex-[2] relative min-h-[140px]"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span><div class="w-full h-[120px] relative"><canvas id="line-reach"></canvas></div></div>
+                        <div class="flex-1 min-w-[200px] flex flex-col">
+                            <span class="metric-title">Суммарный охват / показы / просмотры</span>
+                            <div class="metric-value mt-1" id="val-reach">0</div>
+                            <div class="mt-auto w-full" id="diff-reach"></div>
+                        </div>
+
+                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span>
+                            <div class="w-full h-[120px] relative">
+                                <canvas id="pie-reach"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="flex-[2] relative min-h-[140px]">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
+                            <div class="w-full h-[120px] relative">
+                                <canvas id="line-reach"></canvas>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="bento-card flex flex-col lg:flex-row gap-6 p-6">
-                        <div class="flex-1 min-w-[200px] flex flex-col"><span class="metric-title flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-500 block"></span>Всего лидов</span><div class="metric-value text-blue-600 mt-1" id="val-leads">0</div><div class="mt-auto w-full" id="diff-leads"></div></div>
-                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span><div class="w-full h-[120px] relative"><canvas id="pie-leads"></canvas></div></div>
-                        <div class="flex-[2] relative min-h-[140px]"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span><div class="w-full h-[120px] relative"><canvas id="line-leads"></canvas></div></div>
+                        <div class="flex-1 min-w-[200px] flex flex-col">
+                            <span class="metric-title flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-blue-500 block"></span>
+                                Всего лидов
+                            </span>
+                            <div class="metric-value text-blue-600 mt-1" id="val-leads">0</div>
+                            <div class="mt-auto w-full" id="diff-leads"></div>
+                        </div>
+
+                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span>
+                            <div class="w-full h-[120px] relative">
+                                <canvas id="pie-leads"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="flex-[2] relative min-h-[140px]">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
+                            <div class="w-full h-[120px] relative">
+                                <canvas id="line-leads"></canvas>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="bento-card flex flex-col lg:flex-row gap-6 p-6">
-                        <div class="flex-1 min-w-[200px] flex flex-col"><span class="metric-title flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500 block"></span>Приток подписчиков</span><div class="metric-value mt-1" id="val-subs">0</div><div class="mt-auto w-full" id="diff-subs"></div></div>
-                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span><div class="w-full h-[120px] relative"><canvas id="pie-subs"></canvas></div></div>
-                        <div class="flex-[2] relative min-h-[140px]"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span><div class="w-full h-[120px] relative"><canvas id="line-subs"></canvas></div></div>
+                        <div class="flex-1 min-w-[200px] flex flex-col">
+                            <span class="metric-title flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 block"></span>
+                                Приток подписчиков
+                            </span>
+                            <div class="metric-value mt-1" id="val-subs">0</div>
+                            <div class="mt-auto w-full" id="diff-subs"></div>
+                        </div>
+
+                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span>
+                            <div class="w-full h-[120px] relative">
+                                <canvas id="pie-subs"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="flex-[2] relative min-h-[140px]">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
+                            <div class="w-full h-[120px] relative">
+                                <canvas id="line-subs"></canvas>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="bento-card flex flex-col lg:flex-row gap-6 p-6">
-                        <div class="flex-1 min-w-[200px] flex flex-col"><span class="metric-title">Средний ERR</span><div class="metric-value text-slate-700 mt-1" id="val-err">0%</div><div class="mt-auto w-full" id="diff-err"></div></div>
-                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">ERR по каналам</span><div class="w-full h-[120px] relative"><canvas id="pie-err"></canvas></div></div>
-                        <div class="flex-[2] relative min-h-[140px]"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span><div class="w-full h-[120px] relative"><canvas id="line-err"></canvas></div></div>
+                        <div class="flex-1 min-w-[200px] flex flex-col">
+                            <span class="metric-title">Средний ERR</span>
+                            <div class="metric-value text-slate-700 mt-1" id="val-err">0%</div>
+                            <div class="mt-auto w-full" id="diff-err"></div>
+                        </div>
+
+                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">ERR по каналам</span>
+                            <div class="w-full h-[120px] relative">
+                                <canvas id="pie-err"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="flex-[2] relative min-h-[140px]">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
+                            <div class="w-full h-[120px] relative">
+                                <canvas id="line-err"></canvas>
+                            </div>
+                        </div>
                     </div>
+
                 </div>
             </div>
         </main>
@@ -110,13 +290,29 @@
         <main class="scroll-area hidden" id="view-global">
             <div class="max-w-7xl mx-auto p-4 sm:p-6">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bento-card h-[360px]"><span class="metric-title mb-4">Охват / показы / просмотры по месяцам</span><canvas id="global-reach"></canvas></div>
-                    <div class="bento-card h-[360px]"><span class="metric-title mb-4">Лиды по месяцам</span><canvas id="global-leads"></canvas></div>
-                    <div class="bento-card h-[360px]"><span class="metric-title mb-4">Приток подписчиков по месяцам</span><canvas id="global-subs"></canvas></div>
-                    <div class="bento-card h-[360px]"><span class="metric-title mb-4">ERR по месяцам</span><canvas id="global-err"></canvas></div>
+                    <div class="bento-card h-[360px]">
+                        <span class="metric-title mb-4">Охват / показы / просмотры по месяцам</span>
+                        <canvas id="global-reach"></canvas>
+                    </div>
+
+                    <div class="bento-card h-[360px]">
+                        <span class="metric-title mb-4">Лиды по месяцам</span>
+                        <canvas id="global-leads"></canvas>
+                    </div>
+
+                    <div class="bento-card h-[360px]">
+                        <span class="metric-title mb-4">Приток подписчиков по месяцам</span>
+                        <canvas id="global-subs"></canvas>
+                    </div>
+
+                    <div class="bento-card h-[360px]">
+                        <span class="metric-title mb-4">ERR по месяцам</span>
+                        <canvas id="global-err"></canvas>
+                    </div>
                 </div>
             </div>
         </main>
+
     </div>
 
     <script type="module">
@@ -143,16 +339,23 @@
         let monthsData = [];
         let datePicker = null;
         let currentTab = 'current';
+
         const smmCharts = {};
         const NF = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
-        const ruMonths = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+
+        const ruMonths = [
+            "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+            "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+        ];
 
         window.switchTab = function(tabName) {
             currentTab = tabName;
+
             const viewCurrent = document.getElementById('view-current');
             const viewGlobal = document.getElementById('view-global');
             const btnCurrent = document.getElementById('tab-current');
             const btnGlobal = document.getElementById('tab-global');
+
             const activeClass = "px-4 py-2 bg-white text-slate-900 shadow-sm rounded-lg flex-1 sm:flex-none whitespace-nowrap transition-all";
             const inactiveClass = "px-4 py-2 text-slate-500 hover:text-slate-900 rounded-lg flex-1 sm:flex-none whitespace-nowrap transition-all";
 
@@ -172,15 +375,61 @@
         };
 
         function slugify(text) {
-            return btoa(encodeURIComponent(text)).replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
+            return btoa(encodeURIComponent(text))
+                .replace(/[^a-zA-Z0-9]/g, '')
+                .substring(0, 10);
         }
 
-        function formatNum(num) { return NF.format(Math.round(Number(num) || 0)); }
-        function formatPerc(num) { return `${(Number(num) || 0).toFixed(2)}%`; }
-        function dateOnly(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
-        function addMonths(d, n) { return new Date(d.getFullYear(), d.getMonth() + n, d.getDate()); }
-        function daysBetweenInclusive(start, end) { return Math.max(1, Math.round((dateOnly(end) - dateOnly(start)) / 86400000) + 1); }
-        function monthNameFromDate(date) { return `${ruMonths[date.getMonth()]} ${date.getFullYear()}`; }
+        function formatNum(num) {
+            return NF.format(Math.round(Number(num) || 0));
+        }
+
+        function formatPerc(num) {
+            return `${(Number(num) || 0).toFixed(2)}%`;
+        }
+
+        function dateOnly(d) {
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        }
+
+        function todayOnly() {
+            return dateOnly(new Date());
+        }
+
+        function daysBetweenInclusive(start, end) {
+            return Math.max(1, Math.round((dateOnly(end) - dateOnly(start)) / 86400000) + 1);
+        }
+
+        function minDate(a, b) {
+            return dateOnly(a) <= dateOnly(b) ? dateOnly(a) : dateOnly(b);
+        }
+
+        function maxDate(a, b) {
+            return dateOnly(a) >= dateOnly(b) ? dateOnly(a) : dateOnly(b);
+        }
+
+        function monthNameFromDate(date) {
+            return `${ruMonths[date.getMonth()]} ${date.getFullYear()}`;
+        }
+
+        function getPreviousFullMonthRange(startDate) {
+            const prevMonthDate = new Date(startDate.getFullYear(), startDate.getMonth() - 1, 1);
+
+            return {
+                start: new Date(prevMonthDate.getFullYear(), prevMonthDate.getMonth(), 1),
+                end: new Date(prevMonthDate.getFullYear(), prevMonthDate.getMonth() + 1, 0)
+            };
+        }
+
+        function getActualEndDate(startDate, endDate) {
+            const today = todayOnly();
+
+            if (dateOnly(startDate) > today) {
+                return dateOnly(startDate);
+            }
+
+            return minDate(endDate, today);
+        }
 
         function findMonthIndexByDate(date) {
             return monthsData.findIndex(m => m && m.name === monthNameFromDate(date));
@@ -188,7 +437,11 @@
 
         function getMonthYear(month) {
             const [mName, y] = String(month?.name || '').split(' ');
-            return { year: Number(y), monthIndex: ruMonths.indexOf(mName) };
+
+            return {
+                year: Number(y),
+                monthIndex: ruMonths.indexOf(mName)
+            };
         }
 
         function isPercentMetric(name) {
@@ -198,7 +451,13 @@
 
         function isReachMetric(name) {
             const s = String(name || '').toLowerCase();
-            return !isPercentMetric(name) && (s.includes('охват') || s.includes('показы') || s.includes('просмотры'));
+
+            return !isPercentMetric(name) && (
+                s.includes('охват') ||
+                s.includes('показы') ||
+                s.includes('просмотры') ||
+                s.includes('посещения профиля')
+            );
         }
 
         function isLeadMetric(name) {
@@ -233,6 +492,7 @@
             const today = new Date();
             const year = today.getFullYear();
             const month = today.getMonth();
+
             const firstDay = new Date(year, month, 1);
             const lastDay = new Date(year, month + 1, 0);
 
@@ -261,6 +521,7 @@
 
             channels.forEach((ch, idx) => {
                 if (!ch) return;
+
                 const opt = document.createElement('option');
                 opt.value = `c${idx}`;
                 opt.innerText = ch.name || `Канал ${idx + 1}`;
@@ -284,11 +545,14 @@
         }
 
         function extractSMMRange(monthIndex, startDate, endDate, channelFilter = 'all') {
-            const dayCount = daysBetweenInclusive(startDate, endDate);
+            const safeStart = dateOnly(startDate);
+            const safeEnd = dateOnly(endDate);
+            const dayCount = daysBetweenInclusive(safeStart, safeEnd);
+
             const result = {
                 labels: Array.from({ length: dayCount }, (_, i) => {
-                    const d = new Date(startDate);
-                    d.setDate(startDate.getDate() + i);
+                    const d = new Date(safeStart);
+                    d.setDate(safeStart.getDate() + i);
                     return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
                 }),
                 reach: initMetricBucket(dayCount),
@@ -298,7 +562,10 @@
             };
 
             const month = monthsData[monthIndex];
-            if (!month) return result;
+
+            if (!month) {
+                return result;
+            }
 
             const { year, monthIndex: monthIndex0 } = getMonthYear(month);
             const channels = month.smmChannels || [];
@@ -311,7 +578,9 @@
                 result.subs.byC[cKey] ??= 0;
                 result.err.byCErr[cKey] ??= { weighted: 0, weight: 0, sum: 0, count: 0 };
 
-                if (channelFilter !== 'all' && channelFilter !== cKey) return;
+                if (channelFilter !== 'all' && channelFilter !== cKey) {
+                    return;
+                }
 
                 const metrics = channel.metrics || [];
                 const reachMetric = metrics.find(isReachMetric);
@@ -319,17 +588,21 @@
 
                 (month.weeks || []).forEach((week, wI) => {
                     (week.days || []).forEach((day, dI) => {
-                        const realDate = new Date(year, monthIndex0, Number(day.num));
+                        const realDate = dateOnly(new Date(year, monthIndex0, Number(day.num)));
 
-                        if (realDate < dateOnly(startDate) || realDate > dateOnly(endDate)) return;
+                        if (realDate < safeStart || realDate > safeEnd) {
+                            return;
+                        }
 
-                        const tIdx = daysBetweenInclusive(startDate, realDate) - 1;
+                        const tIdx = daysBetweenInclusive(safeStart, realDate) - 1;
 
                         metrics.forEach(metricName => {
                             const metricSlug = slugify(metricName);
                             const key = `smm_m${monthIndex}_c${cI}_w${wI}_d${dI}_${metricSlug}`;
 
-                            if (!(key in inputState)) return;
+                            if (!(key in inputState)) {
+                                return;
+                            }
 
                             const val = Number(inputState[key]) || 0;
 
@@ -353,6 +626,7 @@
 
                             if (eKey in inputState) {
                                 const errVal = Number(inputState[eKey]) || 0;
+
                                 const reachVal = reachMetric
                                     ? (Number(inputState[`smm_m${monthIndex}_c${cI}_w${wI}_d${dI}_${slugify(reachMetric)}`]) || 0)
                                     : 0;
@@ -366,6 +640,8 @@
 
                                     byC.weighted += errVal * reachVal;
                                     byC.weight += reachVal;
+
+                                    result.err.t[tIdx + '_weight'] = (result.err.t[tIdx + '_weight'] || 0) + reachVal;
                                 } else {
                                     result.err.errSimpleSum += errVal;
                                     result.err.errSimpleCount += 1;
@@ -373,9 +649,9 @@
 
                                     byC.sum += errVal;
                                     byC.count += 1;
-                                }
 
-                                result.err.t[tIdx + '_count'] = (result.err.t[tIdx + '_count'] || 0) + (reachVal > 0 ? reachVal : 1);
+                                    result.err.t[tIdx + '_count'] = (result.err.t[tIdx + '_count'] || 0) + 1;
+                                }
                             }
                         }
                     });
@@ -384,6 +660,7 @@
 
             Object.keys(result.err.byCErr).forEach(cKey => {
                 const item = result.err.byCErr[cKey];
+
                 result.err.byC[cKey] = item.weight > 0
                     ? item.weighted / item.weight
                     : (item.count > 0 ? item.sum / item.count : 0);
@@ -394,8 +671,13 @@
                 : (result.err.errSimpleCount > 0 ? result.err.errSimpleSum / result.err.errSimpleCount : 0);
 
             result.err.t = result.err.t.map((v, i) => {
-                const c = result.err.t[i + '_count'] || 0;
-                return c > 0 ? v / c : 0;
+                const weight = result.err.t[i + '_weight'] || 0;
+                const count = result.err.t[i + '_count'] || 0;
+
+                if (weight > 0) return v / weight;
+                if (count > 0) return v / count;
+
+                return 0;
             });
 
             return result;
@@ -408,17 +690,28 @@
 
             const curMetric = isPercent ? currentTotal : currentTotal / Math.max(1, currentDays);
             const prevMetric = isPercent ? prevTotal : prevTotal / Math.max(1, prevDays);
+
             const diff = ((curMetric - prevMetric) / prevMetric) * 100;
             const good = diff >= 0;
             const colorClass = good ? 'badge-green' : 'badge-red';
             const trendText = good ? '👍 Темп выше' : '📉 Темп ниже';
             const diffAbs = Math.abs(diff).toFixed(1);
+
             const prevText = isPercent ? formatPerc(prevTotal) : `${formatNum(prevMetric)} / день`;
+
             const curText = isPercent
                 ? ''
                 : `<span class="block text-[11px] font-bold text-slate-500 mb-1 border-b border-slate-100 pb-1 w-full uppercase tracking-wide">В среднем: <span class="text-slate-800">${formatNum(curMetric)}</span> в день</span>`;
 
-            return `<div class="mt-3 flex flex-col items-start w-full bg-slate-50 rounded-lg p-2 border border-slate-100">${curText}<div class="badge ${colorClass} flex flex-col gap-1 items-start w-full border-none px-2 py-1 mt-1"><span class="font-bold">${trendText} на ${diffAbs}%</span><span class="text-[10px] font-medium opacity-80">Прошлый мес: ${prevText}</span></div></div>`;
+            return `
+                <div class="mt-3 flex flex-col items-start w-full bg-slate-50 rounded-lg p-2 border border-slate-100">
+                    ${curText}
+                    <div class="badge ${colorClass} flex flex-col gap-1 items-start w-full border-none px-2 py-1 mt-1">
+                        <span class="font-bold">${trendText} на ${diffAbs}%</span>
+                        <span class="text-[10px] font-medium opacity-80">Прошлый мес: ${prevText}</span>
+                    </div>
+                </div>
+            `;
         }
 
         function channelName(monthIndex, cKey) {
@@ -428,11 +721,18 @@
 
         function renderPie(id, dataObj, monthIndex, isAverage = false) {
             const canvas = document.getElementById(id);
+
             if (!canvas) return;
 
-            if (smmCharts[id]) smmCharts[id].destroy();
+            if (smmCharts[id]) {
+                smmCharts[id].destroy();
+            }
 
-            const defaultColors = ['#e1306c', '#0088cc', '#0077ff', '#10b981', '#ff0000', '#8b5cf6', '#f59e0b', '#14b8a6', '#f43f5e', '#64748b'];
+            const defaultColors = [
+                '#e1306c', '#0088cc', '#0077ff', '#10b981', '#ff0000',
+                '#8b5cf6', '#f59e0b', '#14b8a6', '#f43f5e', '#64748b'
+            ];
+
             const labels = [];
             const values = [];
             const colors = [];
@@ -443,7 +743,7 @@
                 if (v > 0) {
                     labels.push(channelName(monthIndex, cKey));
                     values.push(v);
-                    colors.push(defaultColors[Number(cKey.replace('c','')) % defaultColors.length]);
+                    colors.push(defaultColors[Number(cKey.replace('c', '')) % defaultColors.length]);
                 }
             });
 
@@ -488,9 +788,12 @@
 
         function renderLine(id, labels, timelineArray, color, isPercent = false) {
             const canvas = document.getElementById(id);
+
             if (!canvas) return;
 
-            if (smmCharts[id]) smmCharts[id].destroy();
+            if (smmCharts[id]) {
+                smmCharts[id].destroy();
+            }
 
             smmCharts[id] = new Chart(canvas, {
                 type: 'line',
@@ -516,11 +819,15 @@
                         datalabels: { display: false }
                     },
                     scales: {
-                        x: { display: false },
+                        x: {
+                            display: false
+                        },
                         y: {
                             border: { display: false },
                             grid: { borderDash: [4, 4] },
-                            ticks: { callback: v => isPercent ? v + '%' : v }
+                            ticks: {
+                                callback: v => isPercent ? v + '%' : v
+                            }
                         }
                     },
                     interaction: {
@@ -533,9 +840,12 @@
 
         function renderGlobalChart(id, labels, values, color, isPercent = false) {
             const canvas = document.getElementById(id);
+
             if (!canvas) return;
 
-            if (smmCharts[id]) smmCharts[id].destroy();
+            if (smmCharts[id]) {
+                smmCharts[id].destroy();
+            }
 
             smmCharts[id] = new Chart(canvas, {
                 type: 'bar',
@@ -565,7 +875,9 @@
                         x: { grid: { display: false } },
                         y: {
                             beginAtZero: true,
-                            ticks: { callback: v => isPercent ? v + '%' : v }
+                            ticks: {
+                                callback: v => isPercent ? v + '%' : v
+                            }
                         }
                     }
                 }
@@ -579,17 +891,20 @@
                 hideError();
 
                 const selectedDates = datePicker.selectedDates;
+
                 if (selectedDates.length < 2) return;
 
-                const start = dateOnly(selectedDates[0]);
-                const end = dateOnly(selectedDates[1]);
+                const selectedStart = dateOnly(selectedDates[0]);
+                const selectedEnd = dateOnly(selectedDates[1]);
 
-                updateMonthLabel(start);
+                const actualEnd = getActualEndDate(selectedStart, selectedEnd);
 
-                const monthIndex = findMonthIndexByDate(start);
+                updateMonthLabel(selectedStart);
+
+                const monthIndex = findMonthIndexByDate(selectedStart);
 
                 if (monthIndex === -1) {
-                    showError(`В базе нет месяца: ${monthNameFromDate(start)}`);
+                    showError(`В базе нет месяца: ${monthNameFromDate(selectedStart)}`);
                     return;
                 }
 
@@ -600,17 +915,17 @@
 
                 const channelFilter = channelFilterEl.value;
 
-                const current = extractSMMRange(monthIndex, start, end, channelFilter);
+                const current = extractSMMRange(monthIndex, selectedStart, actualEnd, channelFilter);
 
-                const prevStart = addMonths(start, -1);
-                const prevEnd = addMonths(end, -1);
-                const prevMonthIndex = Math.max(0, findMonthIndexByDate(prevStart));
+                const prevRange = getPreviousFullMonthRange(selectedStart);
+                const prevMonthIndex = findMonthIndexByDate(prevRange.start);
+
                 const prev = prevMonthIndex >= 0
-                    ? extractSMMRange(prevMonthIndex, prevStart, prevEnd, channelFilter)
+                    ? extractSMMRange(prevMonthIndex, prevRange.start, prevRange.end, channelFilter)
                     : null;
 
-                const currentDays = daysBetweenInclusive(start, end);
-                const prevDays = daysBetweenInclusive(prevStart, prevEnd);
+                const currentDays = daysBetweenInclusive(selectedStart, actualEnd);
+                const prevDays = daysBetweenInclusive(prevRange.start, prevRange.end);
 
                 document.getElementById('val-reach').innerText = formatNum(current.reach.tot);
                 document.getElementById('diff-reach').innerHTML = getCompareBadge(current.reach.tot, prev?.reach?.tot, currentDays, prevDays);
@@ -648,12 +963,19 @@
             const err = [];
 
             monthsData.forEach((m, mI) => {
-                labels.push(String(m.name || '').replace(' 2026', ''));
-
                 const { year, monthIndex } = getMonthYear(m);
+
+                if (!Number.isFinite(year) || monthIndex < 0) return;
+
                 const start = new Date(year, monthIndex, 1);
                 const end = new Date(year, monthIndex + 1, 0);
-                const data = extractSMMRange(mI, start, end, 'all');
+                const actualEnd = getActualEndDate(start, end);
+
+                if (dateOnly(start) > todayOnly()) return;
+
+                labels.push(String(m.name || '').replace(' 2026', ''));
+
+                const data = extractSMMRange(mI, start, actualEnd, 'all');
 
                 reach.push(data.reach.tot);
                 leads.push(data.leads.tot);
@@ -667,8 +989,13 @@
             renderGlobalChart('global-err', labels, err, '#64748b', true);
         }
 
-        document.getElementById('login-btn').addEventListener('click', () => signInWithPopup(auth, provider));
-        document.getElementById('current-channel').addEventListener('change', processCurrentMonthData);
+        document.getElementById('login-btn').addEventListener('click', () => {
+            signInWithPopup(auth, provider);
+        });
+
+        document.getElementById('current-channel').addEventListener('change', () => {
+            processCurrentMonthData();
+        });
 
         onAuthStateChanged(auth, (user) => {
             if (!user) return;
@@ -676,15 +1003,19 @@
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('dashboard-screen').classList.remove('hidden');
 
-            if (!datePicker) setInitialDates();
+            if (!datePicker) {
+                setInitialDates();
+            }
 
             const dbRef = ref(db, 'kpi_project');
 
             onValue(dbRef, (snapshot) => {
                 const data = snapshot.val();
+
                 if (!data) return;
 
                 inputState = data.inputState || {};
+
                 monthsData = Array.isArray(data.monthsData)
                     ? data.monthsData
                     : Object.values(data.monthsData || {});
@@ -692,8 +1023,11 @@
                 document.getElementById('sync-status').innerText = 'Firebase: онлайн';
                 document.getElementById('sync-status').className = 'text-xs font-bold text-emerald-600 mt-1';
 
-                if (currentTab === 'global') renderGlobalData();
-                else processCurrentMonthData();
+                if (currentTab === 'global') {
+                    renderGlobalData();
+                } else {
+                    processCurrentMonthData();
+                }
 
             }, (error) => {
                 document.getElementById('sync-status').innerText = 'Firebase: нет доступа';
