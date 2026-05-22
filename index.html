@@ -468,34 +468,23 @@
         }
 
         function getPreviousAnalogRange(startDate, endDate) {
-            const start = dateOnly(startDate);
-            const end = dateOnly(endDate);
+    const start = dateOnly(startDate);
+    const end = dateOnly(endDate);
 
-            if (isFullMonthRange(start, end)) {
-                const prevMonth = new Date(start.getFullYear(), start.getMonth() - 1, 1);
+    const durationDays = daysBetweenInclusive(start, end);
 
-                const prevStart = new Date(prevMonth.getFullYear(), prevMonth.getMonth(), 1);
-                const prevEnd = new Date(prevMonth.getFullYear(), prevMonth.getMonth() + 1, 0);
+    const prevEnd = new Date(start);
+    prevEnd.setDate(start.getDate() - 1);
 
-                return {
-                    start: prevStart,
-                    end: prevEnd,
-                    label: `${formatShortDate(prevStart)}–${formatShortDate(prevEnd)}`
-                };
-            }
+    const prevStart = new Date(prevEnd);
+    prevStart.setDate(prevEnd.getDate() - durationDays + 1);
 
-            const prevStart = new Date(start.getFullYear(), start.getMonth() - 1, start.getDate());
-            const durationDays = daysBetweenInclusive(start, end);
-            const prevEnd = new Date(prevStart);
-
-            prevEnd.setDate(prevStart.getDate() + durationDays - 1);
-
-            return {
-                start: prevStart,
-                end: prevEnd,
-                label: `${formatShortDate(prevStart)}–${formatShortDate(prevEnd)}`
-            };
-        }
+    return {
+        start: prevStart,
+        end: prevEnd,
+        label: `${formatShortDate(prevStart)}–${formatShortDate(prevEnd)}`
+    };
+}
 
         function getActualEndDate(startDate, endDate) {
             const today = todayOnly();
