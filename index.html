@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMM Дашборд | Аналитика</title>
-    
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
@@ -24,6 +24,13 @@
         .filter-input { background: #f8fafc; border: 1px solid #e2e8f0; color: #334155; font-size: 0.875rem; font-weight: 500; border-radius: 0.75rem; padding: 0.5rem 0.75rem; outline: none; transition: all 0.2s; }
         .filter-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
         .filter-label { display: block; font-size: 0.75rem; font-weight: 600; color: #64748b; margin-bottom: 0.375rem; text-transform: uppercase; letter-spacing: 0.025em; }
+        .metric-title { font-size: 0.76rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
+        .metric-value { font-size: 2.15rem; line-height: 1; font-weight: 900; color: #0f172a; letter-spacing: -0.04em; }
+        .badge { display:inline-flex; align-items:center; border-radius: .65rem; padding: .28rem .55rem; font-size: .72rem; font-weight: 800; }
+        .badge-neutral { background:#f1f5f9; color:#64748b; }
+        .badge-green { background:#dcfce7; color:#166534; }
+        .badge-red { background:#fee2e2; color:#991b1b; }
+        .badge-blue { background:#dbeafe; color:#1d4ed8; }
     </style>
 </head>
 <body class="antialiased">
@@ -32,6 +39,7 @@
         <div class="bg-white p-8 rounded-[2rem] shadow-2xl max-w-sm w-full relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-cyan-400"></div>
             <h2 class="text-2xl font-extrabold mt-2 text-slate-900">Вход (SMM)</h2>
+            <p class="mt-2 text-sm text-slate-500">Дашборд читает данные из существующей ветки <b>kpi_project</b>.</p>
             <button id="login-btn" class="w-full mt-6 bg-slate-900 text-white p-3.5 rounded-xl font-bold flex justify-center items-center h-14 transition hover:bg-slate-800">
                 Войти через Google
             </button>
@@ -42,6 +50,7 @@
         <header class="glass-header sticky top-0 z-40 px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
                 <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">SMM Аналитика: <span id="current-month-label" class="text-blue-600">...</span></h1>
+                <div id="sync-status" class="text-xs font-bold text-slate-400 mt-1">Ожидание Firebase...</div>
             </div>
             <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
                 <div class="bg-slate-200/50 p-1 rounded-xl flex text-sm font-semibold w-full sm:w-auto overflow-x-auto">
@@ -53,7 +62,6 @@
 
         <main class="scroll-area" id="view-current">
             <div class="max-w-7xl mx-auto p-4 sm:p-6">
-                
                 <div class="flex flex-col sm:flex-row gap-4 mb-6 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
                     <div class="flex gap-4 flex-1">
                         <div class="w-full sm:w-auto">
@@ -62,7 +70,7 @@
                         </div>
                     </div>
                     <div>
-                        <span class="filter-label">Рекламный канал</span>
+                        <span class="filter-label">SMM канал</span>
                         <select id="current-channel" class="filter-input w-full sm:w-auto min-w-[180px]">
                             <option value="all">Все каналы</option>
                         </select>
@@ -72,77 +80,41 @@
                 <div id="error-container" class="hidden mb-6 bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl text-sm font-medium"></div>
 
                 <div class="flex flex-col gap-6">
-                    
                     <div class="bento-card flex flex-col lg:flex-row gap-6 p-6">
-                        <div class="flex-1 min-w-[200px] flex flex-col">
-                            <span class="metric-title">Суммарный охват / Показы</span>
-                            <div class="metric-value mt-1" id="val-reach">0</div>
-                            <div class="mt-auto w-full" id="diff-reach"></div>
-                        </div>
-                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span>
-                            <div class="w-full h-[120px] relative"><canvas id="pie-reach"></canvas></div>
-                        </div>
-                        <div class="flex-[2] relative min-h-[140px]">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
-                            <div class="w-full h-[120px] relative"><canvas id="line-reach"></canvas></div>
-                        </div>
+                        <div class="flex-1 min-w-[200px] flex flex-col"><span class="metric-title">Суммарный охват / показы / просмотры</span><div class="metric-value mt-1" id="val-reach">0</div><div class="mt-auto w-full" id="diff-reach"></div></div>
+                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span><div class="w-full h-[120px] relative"><canvas id="pie-reach"></canvas></div></div>
+                        <div class="flex-[2] relative min-h-[140px]"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span><div class="w-full h-[120px] relative"><canvas id="line-reach"></canvas></div></div>
                     </div>
 
                     <div class="bento-card flex flex-col lg:flex-row gap-6 p-6">
-                        <div class="flex-1 min-w-[200px] flex flex-col">
-                            <span class="metric-title flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-500 block"></span>Всего лидов</span>
-                            <div class="metric-value text-blue-600 mt-1" id="val-leads">0</div>
-                            <div class="mt-auto w-full" id="diff-leads"></div>
-                        </div>
-                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span>
-                            <div class="w-full h-[120px] relative"><canvas id="pie-leads"></canvas></div>
-                        </div>
-                        <div class="flex-[2] relative min-h-[140px]">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
-                            <div class="w-full h-[120px] relative"><canvas id="line-leads"></canvas></div>
-                        </div>
+                        <div class="flex-1 min-w-[200px] flex flex-col"><span class="metric-title flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-500 block"></span>Всего лидов</span><div class="metric-value text-blue-600 mt-1" id="val-leads">0</div><div class="mt-auto w-full" id="diff-leads"></div></div>
+                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span><div class="w-full h-[120px] relative"><canvas id="pie-leads"></canvas></div></div>
+                        <div class="flex-[2] relative min-h-[140px]"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span><div class="w-full h-[120px] relative"><canvas id="line-leads"></canvas></div></div>
                     </div>
 
                     <div class="bento-card flex flex-col lg:flex-row gap-6 p-6">
-                        <div class="flex-1 min-w-[200px] flex flex-col">
-                            <span class="metric-title flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500 block"></span>Приток подписчиков</span>
-                            <div class="metric-value mt-1" id="val-subs">0</div>
-                            <div class="mt-auto w-full" id="diff-subs"></div>
-                        </div>
-                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span>
-                            <div class="w-full h-[120px] relative"><canvas id="pie-subs"></canvas></div>
-                        </div>
-                        <div class="flex-[2] relative min-h-[140px]">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
-                            <div class="w-full h-[120px] relative"><canvas id="line-subs"></canvas></div>
-                        </div>
+                        <div class="flex-1 min-w-[200px] flex flex-col"><span class="metric-title flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500 block"></span>Приток подписчиков</span><div class="metric-value mt-1" id="val-subs">0</div><div class="mt-auto w-full" id="diff-subs"></div></div>
+                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Доли каналов</span><div class="w-full h-[120px] relative"><canvas id="pie-subs"></canvas></div></div>
+                        <div class="flex-[2] relative min-h-[140px]"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span><div class="w-full h-[120px] relative"><canvas id="line-subs"></canvas></div></div>
                     </div>
 
                     <div class="bento-card flex flex-col lg:flex-row gap-6 p-6">
-                        <div class="flex-1 min-w-[200px] flex flex-col">
-                            <span class="metric-title">Средний уровень ERR</span>
-                            <div class="metric-value text-slate-700 mt-1" id="val-err">0%</div>
-                            <div class="mt-auto w-full" id="diff-err"></div>
-                        </div>
-                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">ERR по каналам</span>
-                            <div class="w-full h-[120px] relative"><canvas id="pie-err"></canvas></div>
-                        </div>
-                        <div class="flex-[2] relative min-h-[140px]">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
-                            <div class="w-full h-[120px] relative"><canvas id="line-err"></canvas></div>
-                        </div>
+                        <div class="flex-1 min-w-[200px] flex flex-col"><span class="metric-title">Средний ERR</span><div class="metric-value text-slate-700 mt-1" id="val-err">0%</div><div class="mt-auto w-full" id="diff-err"></div></div>
+                        <div class="flex-1 relative min-h-[140px] flex flex-col items-center lg:border-l lg:border-r border-slate-100 px-4"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">ERR по каналам</span><div class="w-full h-[120px] relative"><canvas id="pie-err"></canvas></div></div>
+                        <div class="flex-[2] relative min-h-[140px]"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span><div class="w-full h-[120px] relative"><canvas id="line-err"></canvas></div></div>
                     </div>
-
                 </div>
             </div>
         </main>
 
         <main class="scroll-area hidden" id="view-global">
             <div class="max-w-7xl mx-auto p-4 sm:p-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bento-card h-[360px]"><span class="metric-title mb-4">Охват / показы / просмотры по месяцам</span><canvas id="global-reach"></canvas></div>
+                    <div class="bento-card h-[360px]"><span class="metric-title mb-4">Лиды по месяцам</span><canvas id="global-leads"></canvas></div>
+                    <div class="bento-card h-[360px]"><span class="metric-title mb-4">Приток подписчиков по месяцам</span><canvas id="global-subs"></canvas></div>
+                    <div class="bento-card h-[360px]"><span class="metric-title mb-4">ERR по месяцам</span><canvas id="global-err"></canvas></div>
+                </div>
             </div>
         </main>
     </div>
@@ -153,26 +125,30 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
         const firebaseConfig = {
-  apiKey: "AIzaSyAz6Xm8xnsv9djeW04-kLuct_-JzQN0YlA",
-  authDomain: "esteem-acc18.firebaseapp.com",
-  databaseURL: "https://esteem-acc18-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "esteem-acc18",
-  storageBucket: "esteem-acc18.firebasestorage.app",
-  messagingSenderId: "97815135490",
-  appId: "1:97815135490:web:e34238c3022dac4681ae1b"
-};
+            apiKey: "AIzaSyAz6Xm8xnsv9djeW04-kLuct_-JzQN0YlA",
+            authDomain: "esteem-acc18.firebaseapp.com",
+            databaseURL: "https://esteem-acc18-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "esteem-acc18",
+            storageBucket: "esteem-acc18.firebasestorage.app",
+            messagingSenderId: "97815135490",
+            appId: "1:97815135490:web:e34238c3022dac4681ae1b"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        let rawData = null; 
-        window.monthsData = null; 
-        let datePicker = null; 
-        window.smmCharts = {};
+        let inputState = {};
+        let monthsData = [];
+        let datePicker = null;
+        let currentTab = 'current';
+        const smmCharts = {};
+        const NF = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
+        const ruMonths = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
 
         window.switchTab = function(tabName) {
+            currentTab = tabName;
             const viewCurrent = document.getElementById('view-current');
             const viewGlobal = document.getElementById('view-global');
             const btnCurrent = document.getElementById('tab-current');
@@ -181,319 +157,551 @@
             const inactiveClass = "px-4 py-2 text-slate-500 hover:text-slate-900 rounded-lg flex-1 sm:flex-none whitespace-nowrap transition-all";
 
             if (tabName === 'current') {
-                viewCurrent.classList.remove('hidden'); viewGlobal.classList.add('hidden');
-                btnCurrent.className = activeClass; btnGlobal.className = inactiveClass;
-                processCurrentMonthData(); 
+                viewCurrent.classList.remove('hidden');
+                viewGlobal.classList.add('hidden');
+                btnCurrent.className = activeClass;
+                btnGlobal.className = inactiveClass;
+                processCurrentMonthData();
             } else {
-                viewCurrent.classList.add('hidden'); viewGlobal.classList.remove('hidden');
-                btnCurrent.className = inactiveClass; btnGlobal.className = activeClass;
+                viewCurrent.classList.add('hidden');
+                viewGlobal.classList.remove('hidden');
+                btnCurrent.className = inactiveClass;
+                btnGlobal.className = activeClass;
+                renderGlobalData();
             }
         };
 
-        const formatNum = (num) => new Intl.NumberFormat('ru-RU').format(Math.round(num || 0));
-        const formatPerc = (num) => (num || 0).toFixed(2) + '%';
-
-        // Функция для вычисления "Дней с начала периода" (учитывает текущий день)
-        function getDaysPassed(dateStart, dateEnd) {
-            const today = new Date();
-            let end = dateEnd;
-            if (dateEnd > today) end = today; // Если конец в будущем - обрезаем по сегодня
-            if (dateStart > today) return 1; // Защита от будущих месяцев
-            const diffTime = Math.abs(end - dateStart);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-            return Math.max(1, diffDays);
+        function slugify(text) {
+            return btoa(encodeURIComponent(text)).replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
         }
 
-        // Обновленный бейдж сравнения по среднедневному темпу
-        function getCompareBadge(currentTotal, prevTotal, currentDays, prevDays, isPercent = false) {
-            if (prevTotal === 0 || prevTotal === undefined || isNaN(prevTotal)) return `<div class="badge badge-neutral mt-2">Нет данных за прошлый месяц</div>`;
-            
-            let currentMetric = currentTotal;
-            let prevMetric = prevTotal;
-            
-            // Если это не проценты (не ERR), считаем среднедневное значение
-            if (!isPercent) {
-                currentMetric = currentTotal / Math.max(1, currentDays);
-                prevMetric = prevTotal / Math.max(1, prevDays);
-            }
+        function formatNum(num) { return NF.format(Math.round(Number(num) || 0)); }
+        function formatPerc(num) { return `${(Number(num) || 0).toFixed(2)}%`; }
+        function dateOnly(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+        function addMonths(d, n) { return new Date(d.getFullYear(), d.getMonth() + n, d.getDate()); }
+        function daysBetweenInclusive(start, end) { return Math.max(1, Math.round((dateOnly(end) - dateOnly(start)) / 86400000) + 1); }
+        function monthNameFromDate(date) { return `${ruMonths[date.getMonth()]} ${date.getFullYear()}`; }
 
-            const diff = ((currentMetric - prevMetric) / prevMetric) * 100;
-            const colorClass = diff >= 0 ? 'badge-green' : 'badge-red';
-            const trendText = diff >= 0 ? '👍 Темп выше' : '📉 Темп ниже';
-            const diffAbs = Math.abs(diff).toFixed(1);
-            
-            let prevText = isPercent ? prevTotal.toFixed(2) + '%' : formatNum(prevMetric) + ' / день';
-            let currentDailyHtml = '';
-            
-            if (!isPercent) {
-                currentDailyHtml = `<span class="block text-[11px] font-bold text-slate-500 mb-1 border-b border-slate-100 pb-1 w-full uppercase tracking-wide">В среднем: <span class="text-slate-800">${formatNum(currentMetric)}</span> в день</span>`;
-            }
-
-            return `
-                <div class="mt-3 flex flex-col items-start w-full bg-slate-50 rounded-lg p-2 border border-slate-100">
-                    ${currentDailyHtml}
-                    <div class="badge ${colorClass} flex flex-col gap-1 items-start w-full border-none px-2 py-1 mt-1">
-                        <span class="font-bold">${trendText} на ${diffAbs}%</span>
-                        <span class="text-[10px] font-medium opacity-80">Прошлый мес: ${prevText}</span>
-                    </div>
-                </div>
-            `;
+        function findMonthIndexByDate(date) {
+            return monthsData.findIndex(m => m && m.name === monthNameFromDate(date));
         }
 
-        function renderPie(id, dataObj, monthIndex, isAverage = false) {
-            const canvas = document.getElementById(id);
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            if (window.smmCharts[id]) window.smmCharts[id].destroy();
-            
-            const defaultColors = ['#e1306c', '#0088cc', '#0077ff', '#10b981', '#ff0000', '#8b5cf6', '#f59e0b', '#14b8a6', '#f43f5e', '#64748b'];
-            const fLabels = [], fValues = [], fColors = [];
-            
-            Object.keys(dataObj).forEach(cKey => {
-                const v = dataObj[cKey];
-                if (v > 0) {
-                    let cName = cKey;
-                    const cNum = parseInt(cKey.replace('c', ''));
-                    
-                    if (!isNaN(cNum) && window.monthsData && window.monthsData[monthIndex] && window.monthsData[monthIndex].smmChannels && window.monthsData[monthIndex].smmChannels[cNum]) {
-                        cName = window.monthsData[monthIndex].smmChannels[cNum].name;
-                    } else if (!isNaN(cNum)) {
-                        cName = `Канал ${cNum + 1}`;
-                    }
-
-                    fLabels.push(cName);
-                    fValues.push(v);
-                    fColors.push(defaultColors[cNum % defaultColors.length]);
-                }
-            });
-
-            if (fValues.length === 0) { fLabels.push('Нет данных'); fValues.push(1); fColors.push('#e2e8f0'); }
-
-            window.smmCharts[id] = new Chart(ctx, {
-                type: 'doughnut', 
-                data: { labels: fLabels, datasets: [{ data: fValues, backgroundColor: fColors, borderWidth: 0 }] },
-                plugins: [ChartDataLabels], 
-                options: {
-                    responsive: true, maintainAspectRatio: false, cutout: '65%',
-                    plugins: { legend: { display: false }, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (v) => {
-                        if (v === 1 && fLabels[0] === 'Нет данных') return '';
-                        if (isAverage) return v.toFixed(1) + '%';
-                        if (v >= 1000000) return (v/1000000).toFixed(1) + 'M';
-                        if (v >= 1000) return (v/1000).toFixed(0) + 'k';
-                        return Math.round(v);
-                    } } }
-                }
-            });
+        function getMonthYear(month) {
+            const [mName, y] = String(month?.name || '').split(' ');
+            return { year: Number(y), monthIndex: ruMonths.indexOf(mName) };
         }
 
-        function renderLine(id, timelineArray, color, isPercent = false) {
-            const canvas = document.getElementById(id);
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            if (window.smmCharts[id]) window.smmCharts[id].destroy();
+        function isPercentMetric(name) {
+            const s = String(name || '').toLowerCase();
+            return s === 'err' || s.includes('err') || s.includes('%');
+        }
 
-            let lastNonZero = timelineArray.length - 1;
-            while(lastNonZero >= 0 && timelineArray[lastNonZero] === 0) lastNonZero--;
-            const activeData = timelineArray.slice(0, lastNonZero >= 0 ? lastNonZero + 1 : 0);
-            const labels = activeData.map((_, i) => `День ${i+1}`);
+        function isReachMetric(name) {
+            const s = String(name || '').toLowerCase();
+            return !isPercentMetric(name) && (s.includes('охват') || s.includes('показы') || s.includes('просмотры'));
+        }
 
-            window.smmCharts[id] = new Chart(ctx, {
-                type: 'line', 
-                data: { labels: labels, datasets: [{ data: activeData, borderColor: color, backgroundColor: color + '1a', borderWidth: 2, tension: 0.4, fill: true, pointRadius: 1, pointHoverRadius: 5 }] },
-                plugins: [ChartDataLabels], 
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { x: { display: false }, y: { border: {display: false}, grid: { borderDash: [4, 4] }, ticks: { callback: v => isPercent ? v + '%' : v } } }, interaction: { mode: 'index', intersect: false } }
-            });
+        function isLeadMetric(name) {
+            return String(name || '').toLowerCase().includes('лиды');
+        }
+
+        function isSubsMetric(name) {
+            const s = String(name || '').toLowerCase();
+            return s.includes('чистый приток') || s.includes('подписчик');
+        }
+
+        function isErrMetric(name) {
+            return String(name || '').toLowerCase().includes('err');
+        }
+
+        function showError(message) {
+            const errEl = document.getElementById('error-container');
+            errEl.innerText = message;
+            errEl.classList.remove('hidden');
+        }
+
+        function hideError() {
+            document.getElementById('error-container').classList.add('hidden');
         }
 
         function updateMonthLabel(date) {
-            const monthName = date.toLocaleString('ru-RU', { month: 'long' });
-            document.getElementById('current-month-label').innerText = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-        }
-
-        // Обновление дропдауна с безопасной проверкой объекта/массива
-        function updateChannelDropdown(monthIndex, currentSelection) {
-            const select = document.getElementById('current-channel');
-            select.innerHTML = '<option value="all">Все каналы</option>';
-            
-            if (window.monthsData && window.monthsData[monthIndex] && window.monthsData[monthIndex].smmChannels) {
-                const channels = window.monthsData[monthIndex].smmChannels;
-                for (let key in channels) {
-                    if (!channels[key]) continue;
-                    const opt = document.createElement('option');
-                    opt.value = `c${key}`;
-                    opt.innerText = channels[key].name;
-                    if (`c${key}` === currentSelection) opt.selected = true;
-                    select.appendChild(opt);
-                }
-            }
+            const label = date.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
+            document.getElementById('current-month-label').innerText = label.charAt(0).toUpperCase() + label.slice(1);
         }
 
         function setInitialDates() {
             const today = new Date();
             const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const firstDay = `${year}-${month}-01`;
-            const lastDay = new Date(year, today.getMonth() + 1, 0).getDate();
-            
-            datePicker = flatpickr("#current-date-range", {
-                mode: "range", dateFormat: "Y-m-d", defaultDate: [firstDay, `${year}-${month}-${lastDay}`], locale: "ru",
-                onChange: function(dates) { if (dates.length === 2) { updateMonthLabel(dates[0]); processCurrentMonthData(); } }
+            const month = today.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+
+            datePicker = flatpickr('#current-date-range', {
+                mode: 'range',
+                dateFormat: 'Y-m-d',
+                defaultDate: [firstDay, lastDay],
+                locale: 'ru',
+                onChange: function(dates) {
+                    if (dates.length === 2) {
+                        updateMonthLabel(dates[0]);
+                        processCurrentMonthData();
+                    }
+                }
             });
+
             updateMonthLabel(today);
         }
 
-        document.getElementById('login-btn').addEventListener('click', () => signInWithPopup(auth, provider));
+        function updateChannelDropdown(monthIndex, currentSelection) {
+            const select = document.getElementById('current-channel');
+            const channels = monthsData[monthIndex]?.smmChannels || [];
+            const previous = currentSelection || select.value || 'all';
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('dashboard-screen').classList.remove('hidden');
-                setInitialDates(); 
-                
-                const dbRef = ref(db, 'kpi_project');
-                onValue(dbRef, (snapshot) => {
-                    const data = snapshot.val();
-                    if(data) {
-                        rawData = data.inputState || {};
-                        window.monthsData = data.monthsData || {};
-                        document.getElementById('error-container').classList.add('hidden');
-                        processCurrentMonthData();
-                    }
-                }, (error) => { alert("Доступ запрещен. Проверьте права в Firebase."); });
+            select.innerHTML = '<option value="all">Все каналы</option>';
+
+            channels.forEach((ch, idx) => {
+                if (!ch) return;
+                const opt = document.createElement('option');
+                opt.value = `c${idx}`;
+                opt.innerText = ch.name || `Канал ${idx + 1}`;
+                select.appendChild(opt);
+            });
+
+            select.value = [...select.options].some(o => o.value === previous) ? previous : 'all';
+        }
+
+        function initMetricBucket(dayCount) {
+            return {
+                tot: 0,
+                byC: {},
+                t: Array(dayCount).fill(0),
+                errWeighted: 0,
+                errWeight: 0,
+                errSimpleSum: 0,
+                errSimpleCount: 0,
+                byCErr: {}
+            };
+        }
+
+        function extractSMMRange(monthIndex, startDate, endDate, channelFilter = 'all') {
+            const dayCount = daysBetweenInclusive(startDate, endDate);
+            const result = {
+                labels: Array.from({ length: dayCount }, (_, i) => {
+                    const d = new Date(startDate);
+                    d.setDate(startDate.getDate() + i);
+                    return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+                }),
+                reach: initMetricBucket(dayCount),
+                leads: initMetricBucket(dayCount),
+                subs: initMetricBucket(dayCount),
+                err: initMetricBucket(dayCount)
+            };
+
+            const month = monthsData[monthIndex];
+            if (!month) return result;
+
+            const { year, monthIndex: monthIndex0 } = getMonthYear(month);
+            const channels = month.smmChannels || [];
+
+            channels.forEach((channel, cI) => {
+                const cKey = `c${cI}`;
+
+                result.reach.byC[cKey] ??= 0;
+                result.leads.byC[cKey] ??= 0;
+                result.subs.byC[cKey] ??= 0;
+                result.err.byCErr[cKey] ??= { weighted: 0, weight: 0, sum: 0, count: 0 };
+
+                if (channelFilter !== 'all' && channelFilter !== cKey) return;
+
+                const metrics = channel.metrics || [];
+                const reachMetric = metrics.find(isReachMetric);
+                const errMetric = metrics.find(isErrMetric);
+
+                (month.weeks || []).forEach((week, wI) => {
+                    (week.days || []).forEach((day, dI) => {
+                        const realDate = new Date(year, monthIndex0, Number(day.num));
+
+                        if (realDate < dateOnly(startDate) || realDate > dateOnly(endDate)) return;
+
+                        const tIdx = daysBetweenInclusive(startDate, realDate) - 1;
+
+                        metrics.forEach(metricName => {
+                            const metricSlug = slugify(metricName);
+                            const key = `smm_m${monthIndex}_c${cI}_w${wI}_d${dI}_${metricSlug}`;
+
+                            if (!(key in inputState)) return;
+
+                            const val = Number(inputState[key]) || 0;
+
+                            if (isReachMetric(metricName)) {
+                                result.reach.tot += val;
+                                result.reach.byC[cKey] = (result.reach.byC[cKey] || 0) + val;
+                                result.reach.t[tIdx] += val;
+                            } else if (isLeadMetric(metricName)) {
+                                result.leads.tot += val;
+                                result.leads.byC[cKey] = (result.leads.byC[cKey] || 0) + val;
+                                result.leads.t[tIdx] += val;
+                            } else if (isSubsMetric(metricName)) {
+                                result.subs.tot += val;
+                                result.subs.byC[cKey] = (result.subs.byC[cKey] || 0) + val;
+                                result.subs.t[tIdx] += val;
+                            }
+                        });
+
+                        if (errMetric) {
+                            const eKey = `smm_m${monthIndex}_c${cI}_w${wI}_d${dI}_${slugify(errMetric)}`;
+
+                            if (eKey in inputState) {
+                                const errVal = Number(inputState[eKey]) || 0;
+                                const reachVal = reachMetric
+                                    ? (Number(inputState[`smm_m${monthIndex}_c${cI}_w${wI}_d${dI}_${slugify(reachMetric)}`]) || 0)
+                                    : 0;
+
+                                const byC = result.err.byCErr[cKey];
+
+                                if (reachVal > 0) {
+                                    result.err.errWeighted += errVal * reachVal;
+                                    result.err.errWeight += reachVal;
+                                    result.err.t[tIdx] += errVal * reachVal;
+
+                                    byC.weighted += errVal * reachVal;
+                                    byC.weight += reachVal;
+                                } else {
+                                    result.err.errSimpleSum += errVal;
+                                    result.err.errSimpleCount += 1;
+                                    result.err.t[tIdx] += errVal;
+
+                                    byC.sum += errVal;
+                                    byC.count += 1;
+                                }
+
+                                result.err.t[tIdx + '_count'] = (result.err.t[tIdx + '_count'] || 0) + (reachVal > 0 ? reachVal : 1);
+                            }
+                        }
+                    });
+                });
+            });
+
+            Object.keys(result.err.byCErr).forEach(cKey => {
+                const item = result.err.byCErr[cKey];
+                result.err.byC[cKey] = item.weight > 0
+                    ? item.weighted / item.weight
+                    : (item.count > 0 ? item.sum / item.count : 0);
+            });
+
+            result.err.tot = result.err.errWeight > 0
+                ? result.err.errWeighted / result.err.errWeight
+                : (result.err.errSimpleCount > 0 ? result.err.errSimpleSum / result.err.errSimpleCount : 0);
+
+            result.err.t = result.err.t.map((v, i) => {
+                const c = result.err.t[i + '_count'] || 0;
+                return c > 0 ? v / c : 0;
+            });
+
+            return result;
+        }
+
+        function getCompareBadge(currentTotal, prevTotal, currentDays, prevDays, isPercent = false) {
+            if (!prevTotal || isNaN(prevTotal)) {
+                return `<div class="badge badge-neutral mt-2">Нет данных за прошлый месяц</div>`;
             }
-        });
+
+            const curMetric = isPercent ? currentTotal : currentTotal / Math.max(1, currentDays);
+            const prevMetric = isPercent ? prevTotal : prevTotal / Math.max(1, prevDays);
+            const diff = ((curMetric - prevMetric) / prevMetric) * 100;
+            const good = diff >= 0;
+            const colorClass = good ? 'badge-green' : 'badge-red';
+            const trendText = good ? '👍 Темп выше' : '📉 Темп ниже';
+            const diffAbs = Math.abs(diff).toFixed(1);
+            const prevText = isPercent ? formatPerc(prevTotal) : `${formatNum(prevMetric)} / день`;
+            const curText = isPercent
+                ? ''
+                : `<span class="block text-[11px] font-bold text-slate-500 mb-1 border-b border-slate-100 pb-1 w-full uppercase tracking-wide">В среднем: <span class="text-slate-800">${formatNum(curMetric)}</span> в день</span>`;
+
+            return `<div class="mt-3 flex flex-col items-start w-full bg-slate-50 rounded-lg p-2 border border-slate-100">${curText}<div class="badge ${colorClass} flex flex-col gap-1 items-start w-full border-none px-2 py-1 mt-1"><span class="font-bold">${trendText} на ${diffAbs}%</span><span class="text-[10px] font-medium opacity-80">Прошлый мес: ${prevText}</span></div></div>`;
+        }
+
+        function channelName(monthIndex, cKey) {
+            const cNum = Number(String(cKey).replace('c', ''));
+            return monthsData[monthIndex]?.smmChannels?.[cNum]?.name || `Канал ${cNum + 1}`;
+        }
+
+        function renderPie(id, dataObj, monthIndex, isAverage = false) {
+            const canvas = document.getElementById(id);
+            if (!canvas) return;
+
+            if (smmCharts[id]) smmCharts[id].destroy();
+
+            const defaultColors = ['#e1306c', '#0088cc', '#0077ff', '#10b981', '#ff0000', '#8b5cf6', '#f59e0b', '#14b8a6', '#f43f5e', '#64748b'];
+            const labels = [];
+            const values = [];
+            const colors = [];
+
+            Object.keys(dataObj || {}).forEach(cKey => {
+                const v = Number(dataObj[cKey]) || 0;
+
+                if (v > 0) {
+                    labels.push(channelName(monthIndex, cKey));
+                    values.push(v);
+                    colors.push(defaultColors[Number(cKey.replace('c','')) % defaultColors.length]);
+                }
+            });
+
+            if (!values.length) {
+                labels.push('Нет данных');
+                values.push(1);
+                colors.push('#e2e8f0');
+            }
+
+            smmCharts[id] = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderWidth: 0
+                    }]
+                },
+                plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            color: '#fff',
+                            font: { weight: 'bold', size: 10 },
+                            formatter: v => {
+                                if (labels[0] === 'Нет данных') return '';
+                                if (isAverage) return v.toFixed(1) + '%';
+                                if (v >= 1000000) return (v / 1000000).toFixed(1) + 'M';
+                                if (v >= 1000) return (v / 1000).toFixed(0) + 'k';
+                                return Math.round(v);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderLine(id, labels, timelineArray, color, isPercent = false) {
+            const canvas = document.getElementById(id);
+            if (!canvas) return;
+
+            if (smmCharts[id]) smmCharts[id].destroy();
+
+            smmCharts[id] = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        data: timelineArray,
+                        borderColor: color,
+                        backgroundColor: color + '1a',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 2,
+                        pointHoverRadius: 5
+                    }]
+                },
+                plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: { display: false }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: {
+                            border: { display: false },
+                            grid: { borderDash: [4, 4] },
+                            ticks: { callback: v => isPercent ? v + '%' : v }
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            });
+        }
+
+        function renderGlobalChart(id, labels, values, color, isPercent = false) {
+            const canvas = document.getElementById(id);
+            if (!canvas) return;
+
+            if (smmCharts[id]) smmCharts[id].destroy();
+
+            smmCharts[id] = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: color,
+                        borderRadius: 10
+                    }]
+                },
+                plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            color: '#0f172a',
+                            anchor: 'end',
+                            align: 'end',
+                            font: { weight: 'bold', size: 10 },
+                            formatter: v => isPercent ? v.toFixed(1) + '%' : formatNum(v)
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: v => isPercent ? v + '%' : v }
+                        }
+                    }
+                }
+            });
+        }
 
         function processCurrentMonthData() {
             try {
-                if (!rawData || !datePicker) return;
+                if (!inputState || !datePicker || !monthsData.length) return;
+
+                hideError();
+
                 const selectedDates = datePicker.selectedDates;
-                if (selectedDates.length < 2) return; 
+                if (selectedDates.length < 2) return;
 
-                const targetDate = selectedDates[0];
-                const ruMonths = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-                const targetString = `${ruMonths[targetDate.getMonth()]} ${targetDate.getFullYear()}`;
-                
-                // Безопасный поиск месяца (работает и с массивами, и с объектами Firebase)
-                let monthIndex = -1;
-                if (window.monthsData) {
-                    for (let key in window.monthsData) {
-                        if (window.monthsData[key] && window.monthsData[key].name === targetString) {
-                            monthIndex = parseInt(key);
-                            break;
-                        }
-                    }
-                }
+                const start = dateOnly(selectedDates[0]);
+                const end = dateOnly(selectedDates[1]);
+
+                updateMonthLabel(start);
+
+                const monthIndex = findMonthIndexByDate(start);
+
                 if (monthIndex === -1) {
-                    monthIndex = (targetDate.getFullYear() - 2026) * 12 + targetDate.getMonth();
+                    showError(`В базе нет месяца: ${monthNameFromDate(start)}`);
+                    return;
                 }
-                
-                const curPrefix = `m${monthIndex}`;
-                const prevPrefix = `m${Math.max(0, monthIndex - 1)}`;
-                
+
                 const channelFilterEl = document.getElementById('current-channel');
+                const prevSelection = channelFilterEl.value;
+
+                updateChannelDropdown(monthIndex, prevSelection);
+
                 const channelFilter = channelFilterEl.value;
-                updateChannelDropdown(monthIndex, channelFilter);
 
-                // Расчет количества дней для сравнения (PACE)
-                const currentDays = getDaysPassed(selectedDates[0], selectedDates[1]);
-                const prevStart = new Date(selectedDates[0]);
-                prevStart.setMonth(prevStart.getMonth() - 1);
-                const prevEnd = new Date(prevStart.getFullYear(), prevStart.getMonth() + 1, 0);
-                const prevDays = getDaysPassed(prevStart, prevEnd);
+                const current = extractSMMRange(monthIndex, start, end, channelFilter);
 
-                const extract = (mPrefix) => {
-                    let m = { 
-                        reach: { tot: 0, byC: {}, t: Array(42).fill(0) },
-                        leads: { tot: 0, byC: {}, t: Array(42).fill(0) },
-                        subs:  { tot: 0, byC: {}, t: Array(42).fill(0) },
-                        err:   { tot: 0, byC: {}, t: Array(42).fill(0), tc: Array(42).fill(0) }
-                    };
+                const prevStart = addMonths(start, -1);
+                const prevEnd = addMonths(end, -1);
+                const prevMonthIndex = Math.max(0, findMonthIndexByDate(prevStart));
+                const prev = prevMonthIndex >= 0
+                    ? extractSMMRange(prevMonthIndex, prevStart, prevEnd, channelFilter)
+                    : null;
 
-                    Object.keys(rawData).forEach(key => {
-                        if (!key.startsWith(`smm_${mPrefix}_`)) return;
-
-                        const parts = key.split('_');
-                        if (parts.length !== 6 || !parts[4].startsWith('d')) return;
-
-                        const cIdx = parts[2]; 
-                        if (!cIdx.startsWith('c')) return; 
-                        
-                        m.reach.byC[cIdx] = m.reach.byC[cIdx] || 0;
-                        m.leads.byC[cIdx] = m.leads.byC[cIdx] || 0;
-                        m.subs.byC[cIdx] = m.subs.byC[cIdx] || 0;
-                        m.err.byC[cIdx] = m.err.byC[cIdx] || {s: 0, c: 0};
-
-                        if (channelFilter !== 'all' && cIdx !== channelFilter) return;
-
-                        const wIdx = parseInt(parts[3].replace('w', ''));
-                        const dIdx = parseInt(parts[4].replace('d', ''));
-                        const metric = parts[5];
-                        const val = Number(rawData[key]) || 0;
-
-                        if (isNaN(wIdx) || isNaN(dIdx)) return;
-                        
-                        const tIdx = (wIdx * 7) + dIdx;
-                        if (tIdx >= 42) return; 
-
-                        if (metric === 'JUQwJTlFJU' || metric === 'JUQwJTlGJU') { 
-                            m.reach.tot += val; m.reach.byC[cIdx] += val; m.reach.t[tIdx] += val; 
-                        } else if (metric === 'JUQwJTlCJU') { 
-                            m.leads.tot += val; m.leads.byC[cIdx] += val; m.leads.t[tIdx] += val; 
-                        } else if (metric === 'JUQwJUE3JU') { 
-                            m.subs.tot += val; m.subs.byC[cIdx] += val; m.subs.t[tIdx] += val; 
-                        } else if (metric === 'RVJS') { 
-                            m.err.byC[cIdx].s += val; m.err.byC[cIdx].c += 1; m.err.t[tIdx] += val; m.err.tc[tIdx] += 1; 
-                        }
-                    });
-
-                    let errSum = 0, errCount = 0;
-                    Object.keys(m.err.byC).forEach(c => {
-                        if (m.err.byC[c].c > 0) {
-                            const avg = m.err.byC[c].s / m.err.byC[c].c;
-                            m.err.byC[c] = avg; 
-                            errSum += avg; errCount++;
-                        } else {
-                            m.err.byC[c] = 0;
-                        }
-                    });
-                    m.err.tot = errCount > 0 ? errSum / errCount : 0; 
-                    m.err.t = m.err.t.map((s, i) => m.err.tc[i] > 0 ? s / m.err.tc[i] : 0);
-
-                    return m;
-                };
-
-                const current = extract(curPrefix);
-                const prev = extract(prevPrefix);
+                const currentDays = daysBetweenInclusive(start, end);
+                const prevDays = daysBetweenInclusive(prevStart, prevEnd);
 
                 document.getElementById('val-reach').innerText = formatNum(current.reach.tot);
-                document.getElementById('diff-reach').innerHTML = getCompareBadge(current.reach.tot, prev.reach.tot, currentDays, prevDays);
+                document.getElementById('diff-reach').innerHTML = getCompareBadge(current.reach.tot, prev?.reach?.tot, currentDays, prevDays);
                 renderPie('pie-reach', current.reach.byC, monthIndex);
-                renderLine('line-reach', current.reach.t, '#8b5cf6');
+                renderLine('line-reach', current.labels, current.reach.t, '#8b5cf6');
 
                 document.getElementById('val-leads').innerText = formatNum(current.leads.tot);
-                document.getElementById('diff-leads').innerHTML = getCompareBadge(current.leads.tot, prev.leads.tot, currentDays, prevDays);
+                document.getElementById('diff-leads').innerHTML = getCompareBadge(current.leads.tot, prev?.leads?.tot, currentDays, prevDays);
                 renderPie('pie-leads', current.leads.byC, monthIndex);
-                renderLine('line-leads', current.leads.t, '#3b82f6');
+                renderLine('line-leads', current.labels, current.leads.t, '#3b82f6');
 
                 document.getElementById('val-subs').innerText = formatNum(current.subs.tot);
-                document.getElementById('diff-subs').innerHTML = getCompareBadge(current.subs.tot, prev.subs.tot, currentDays, prevDays);
+                document.getElementById('diff-subs').innerHTML = getCompareBadge(current.subs.tot, prev?.subs?.tot, currentDays, prevDays);
                 renderPie('pie-subs', current.subs.byC, monthIndex);
-                renderLine('line-subs', current.subs.t, '#10b981');
+                renderLine('line-subs', current.labels, current.subs.t, '#10b981');
 
                 document.getElementById('val-err').innerText = formatPerc(current.err.tot);
-                document.getElementById('diff-err').innerHTML = getCompareBadge(current.err.tot, prev.err.tot, currentDays, prevDays, true);
+                document.getElementById('diff-err').innerHTML = getCompareBadge(current.err.tot, prev?.err?.tot, currentDays, prevDays, true);
                 renderPie('pie-err', current.err.byC, monthIndex, true);
-                renderLine('line-err', current.err.t, '#64748b', true);
-                
+                renderLine('line-err', current.labels, current.err.t, '#64748b', true);
+
             } catch (error) {
-                const errEl = document.getElementById('error-container');
-                errEl.innerText = `Критическая ошибка расчетов: ${error.message}`;
-                errEl.classList.remove('hidden');
-                console.error("Ошибка при расчете метрик:", error);
+                showError(`Критическая ошибка расчетов: ${error.message}`);
+                console.error(error);
             }
         }
 
+        function renderGlobalData() {
+            if (!monthsData.length) return;
+
+            const labels = [];
+            const reach = [];
+            const leads = [];
+            const subs = [];
+            const err = [];
+
+            monthsData.forEach((m, mI) => {
+                labels.push(String(m.name || '').replace(' 2026', ''));
+
+                const { year, monthIndex } = getMonthYear(m);
+                const start = new Date(year, monthIndex, 1);
+                const end = new Date(year, monthIndex + 1, 0);
+                const data = extractSMMRange(mI, start, end, 'all');
+
+                reach.push(data.reach.tot);
+                leads.push(data.leads.tot);
+                subs.push(data.subs.tot);
+                err.push(data.err.tot);
+            });
+
+            renderGlobalChart('global-reach', labels, reach, '#8b5cf6');
+            renderGlobalChart('global-leads', labels, leads, '#3b82f6');
+            renderGlobalChart('global-subs', labels, subs, '#10b981');
+            renderGlobalChart('global-err', labels, err, '#64748b', true);
+        }
+
+        document.getElementById('login-btn').addEventListener('click', () => signInWithPopup(auth, provider));
         document.getElementById('current-channel').addEventListener('change', processCurrentMonthData);
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) return;
+
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('dashboard-screen').classList.remove('hidden');
+
+            if (!datePicker) setInitialDates();
+
+            const dbRef = ref(db, 'kpi_project');
+
+            onValue(dbRef, (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
+
+                inputState = data.inputState || {};
+                monthsData = Array.isArray(data.monthsData)
+                    ? data.monthsData
+                    : Object.values(data.monthsData || {});
+
+                document.getElementById('sync-status').innerText = 'Firebase: онлайн';
+                document.getElementById('sync-status').className = 'text-xs font-bold text-emerald-600 mt-1';
+
+                if (currentTab === 'global') renderGlobalData();
+                else processCurrentMonthData();
+
+            }, (error) => {
+                document.getElementById('sync-status').innerText = 'Firebase: нет доступа';
+                document.getElementById('sync-status').className = 'text-xs font-bold text-rose-600 mt-1';
+                showError('Доступ запрещен. Проверьте Firebase Rules и whitelist Google-аккаунта.');
+                console.error(error);
+            });
+        });
     </script>
 </body>
 </html>
