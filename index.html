@@ -150,8 +150,7 @@
         </main>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+           import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
@@ -171,11 +170,10 @@
         const provider = new GoogleAuthProvider();
 
         let rawData = null; 
-        window.monthsData = []; // Сохраняем структуру месяцев глобально
+        window.monthsData = []; 
         let datePicker = null; 
         window.smmCharts = {};
 
-        // Вкладки
         window.switchTab = function(tabName) {
             const viewCurrent = document.getElementById('view-current');
             const viewGlobal = document.getElementById('view-global');
@@ -194,7 +192,6 @@
             }
         };
 
-        // Вспомогательные функции
         const formatNum = (num) => new Intl.NumberFormat('ru-RU').format(Math.round(num || 0));
         const formatPerc = (num) => (num || 0).toFixed(2) + '%';
 
@@ -208,25 +205,43 @@
             return `<div class="badge ${colorClass} mt-3 flex flex-col gap-1 items-start"><span>${trendText} на ${diffAbs}%</span><span class="text-[10px] font-normal opacity-70">Прошлый месяц: ${prevText}</span></div>`;
         }
 
-        function renderPie(id, dataObj, isAverage = false) {
+        // --- ДИНАМИЧЕСКИЙ РЕНДЕР КРУГОВЫХ ДИАГРАММ ---
+        function renderPie(id, dataObj, monthIndex, isAverage = false) {
             const canvas = document.getElementById(id);
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             if (window.smmCharts[id]) window.smmCharts[id].destroy();
             
-            const labels = ['Insta', 'TG', 'VK', 'Dzen', 'YouTube'];
-            const values = [dataObj.c0, dataObj.c1, dataObj.c2, dataObj.c3, dataObj.c4];
-            const colors = ['#e1306c', '#0088cc', '#0077ff', '#10b981', '#ff0000'];
+            // Расширенная палитра для неограниченного числа каналов
+            const defaultColors = ['#e1306c', '#0088cc', '#0077ff', '#10b981', '#ff0000', '#8b5cf6', '#f59e0b', '#14b8a6', '#f43f5e', '#64748b'];
 
             const fLabels = [], fValues = [], fColors = [];
-            values.forEach((v, i) => { if(v > 0) { fLabels.push(labels[i]); fValues.push(v); fColors.push(colors[i]); } });
+            
+            Object.keys(dataObj).forEach(cKey => {
+                const v = dataObj[cKey];
+                if (v > 0) {
+                    let cName = cKey; // По умолчанию 'c0', 'c1' и тд
+                    const cNum = parseInt(cKey.replace('c', ''));
+                    
+                    // Пытаемся получить реальное имя канала из массива месяцев
+                    if (!isNaN(cNum) && window.monthsData[monthIndex] && window.monthsData[monthIndex].smmChannels && window.monthsData[monthIndex].smmChannels[cNum]) {
+                        cName = window.monthsData[monthIndex].smmChannels[cNum].name;
+                    } else if (!isNaN(cNum)) {
+                        cName = `Канал ${cNum + 1}`;
+                    }
+
+                    fLabels.push(cName);
+                    fValues.push(v);
+                    fColors.push(defaultColors[cNum % defaultColors.length]);
+                }
+            });
 
             if (fValues.length === 0) { fLabels.push('Нет данных'); fValues.push(1); fColors.push('#e2e8f0'); }
 
             window.smmCharts[id] = new Chart(ctx, {
                 type: 'doughnut', 
                 data: { labels: fLabels, datasets: [{ data: fValues, backgroundColor: fColors, borderWidth: 0 }] },
-                plugins: [ChartDataLabels], // Принудительно подключаем плагин
+                plugins: [ChartDataLabels], 
                 options: {
                     responsive: true, maintainAspectRatio: false, cutout: '65%',
                     plugins: { legend: { display: false }, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (v) => {
@@ -254,7 +269,7 @@
             window.smmCharts[id] = new Chart(ctx, {
                 type: 'line', 
                 data: { labels: labels, datasets: [{ data: activeData, borderColor: color, backgroundColor: color + '1a', borderWidth: 2, tension: 0.4, fill: true, pointRadius: 1, pointHoverRadius: 5 }] },
-                plugins: [ChartDataLabels], // Принудительно подключаем плагин
+                plugins: [ChartDataLabels], 
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { x: { display: false }, y: { border: {display: false}, grid: { borderDash: [4, 4] }, ticks: { callback: v => isPercent ? v + '%' : v } } }, interaction: { mode: 'index', intersect: false } }
             });
         }
@@ -262,6 +277,22 @@
         function updateMonthLabel(date) {
             const monthName = date.toLocaleString('ru-RU', { month: 'long' });
             document.getElementById('current-month-label').innerText = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+        }
+
+        // --- ДИНАМИЧЕСКИЙ ДРОПДАУН КАНАЛОВ ---
+        function updateChannelDropdown(monthIndex, currentSelection) {
+            const select = document.getElementById('current-channel');
+            select.innerHTML = '<option value="all">Все каналы</option>';
+            
+            if (window.monthsData[monthIndex] && window.monthsData[monthIndex].smmChannels) {
+                window.monthsData[monthIndex].smmChannels.forEach((ch, idx) => {
+                    const opt = document.createElement('option');
+                    opt.value = `c${idx}`;
+                    opt.innerText = ch.name;
+                    if (`c${idx}` === currentSelection) opt.selected = true;
+                    select.appendChild(opt);
+                });
+            }
         }
 
         function setInitialDates() {
@@ -278,7 +309,6 @@
             updateMonthLabel(today);
         }
 
-        // --- АВТОРИЗАЦИЯ И СБОР ДАННЫХ ---
         document.getElementById('login-btn').addEventListener('click', () => signInWithPopup(auth, provider));
 
         onAuthStateChanged(auth, (user) => {
@@ -287,7 +317,6 @@
                 document.getElementById('dashboard-screen').classList.remove('hidden');
                 setInitialDates(); 
                 
-                // ВАЖНО: Загружаем ВЕСЬ kpi_project, а не только inputState!
                 const dbRef = ref(db, 'kpi_project');
                 onValue(dbRef, (snapshot) => {
                     const data = snapshot.val();
@@ -300,14 +329,12 @@
             }
         });
 
-        // --- ГЛАВНАЯ ФУНКЦИЯ РАСЧЕТА ---
         function processCurrentMonthData() {
             try {
                 if (!rawData || !datePicker) return;
                 const selectedDates = datePicker.selectedDates;
                 if (selectedDates.length < 2) return; 
 
-                // Определяем индекс месяца динамически!
                 const targetDate = selectedDates[0];
                 const ruMonths = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
                 const targetString = `${ruMonths[targetDate.getMonth()]} ${targetDate.getFullYear()}`;
@@ -322,15 +349,21 @@
                 
                 const curPrefix = `m${monthIndex}`;
                 const prevPrefix = `m${Math.max(0, monthIndex - 1)}`;
-                const channelFilter = document.getElementById('current-channel').value;
+                
+                // Сохраняем текущий выбор фильтра перед его обновлением
+                const channelFilterEl = document.getElementById('current-channel');
+                const channelFilter = channelFilterEl.value;
+                
+                // Обновляем список фильтров для выбранного месяца
+                updateChannelDropdown(monthIndex, channelFilter);
 
-                // Функция сбора данных
+                // --- УМНЫЙ ЭКСТРАКТОР ДАННЫХ ---
                 const extract = (mPrefix) => {
                     let m = { 
-                        reach: { tot: 0, byC: {c0:0,c1:0,c2:0,c3:0,c4:0}, t: Array(42).fill(0) },
-                        leads: { tot: 0, byC: {c0:0,c1:0,c2:0,c3:0,c4:0}, t: Array(42).fill(0) },
-                        subs:  { tot: 0, byC: {c0:0,c1:0,c2:0,c3:0,c4:0}, t: Array(42).fill(0) },
-                        err:   { tot: 0, byC: {c0:{s:0,c:0},c1:{s:0,c:0},c2:{s:0,c:0},c3:{s:0,c:0},c4:{s:0,c:0}}, t: Array(42).fill(0), tc: Array(42).fill(0) }
+                        reach: { tot: 0, byC: {}, t: Array(42).fill(0) },
+                        leads: { tot: 0, byC: {}, t: Array(42).fill(0) },
+                        subs:  { tot: 0, byC: {}, t: Array(42).fill(0) },
+                        err:   { tot: 0, byC: {}, t: Array(42).fill(0), tc: Array(42).fill(0) }
                     };
 
                     Object.keys(rawData).forEach(key => {
@@ -340,8 +373,15 @@
                         if (parts.length !== 6 || !parts[4].startsWith('d')) return;
 
                         const cIdx = parts[2]; 
-                        // Защита от непредвиденных технических каналов (например c-1)
-                        if (!['c0','c1','c2','c3','c4'].includes(cIdx)) return;
+                        if (!cIdx.startsWith('c')) return; // Игнорируем технические ключи (вроде c-1)
+                        
+                        // Инициализируем канал "на лету", если его еще нет
+                        m.reach.byC[cIdx] = m.reach.byC[cIdx] || 0;
+                        m.leads.byC[cIdx] = m.leads.byC[cIdx] || 0;
+                        m.subs.byC[cIdx] = m.subs.byC[cIdx] || 0;
+                        m.err.byC[cIdx] = m.err.byC[cIdx] || {s: 0, c: 0};
+
+                        // Проверка фильтра
                         if (channelFilter !== 'all' && cIdx !== channelFilter) return;
 
                         const wIdx = parseInt(parts[3].replace('w', ''));
@@ -352,7 +392,7 @@
                         if (isNaN(wIdx) || isNaN(dIdx)) return;
                         
                         const tIdx = (wIdx * 7) + dIdx;
-                        if (tIdx >= 42) return; // Защита массива
+                        if (tIdx >= 42) return; 
 
                         if (metric === 'JUQwJTlFJU' || metric === 'JUQwJTlGJU') { 
                             m.reach.tot += val; m.reach.byC[cIdx] += val; m.reach.t[tIdx] += val; 
@@ -365,9 +405,9 @@
                         }
                     });
 
-                    // Усреднение ERR
+                    // Усреднение ERR для всех найденных каналов
                     let errSum = 0, errCount = 0;
-                    ['c0','c1','c2','c3','c4'].forEach(c => {
+                    Object.keys(m.err.byC).forEach(c => {
                         if (m.err.byC[c].c > 0) {
                             const avg = m.err.byC[c].s / m.err.byC[c].c;
                             m.err.byC[c] = avg; 
@@ -385,25 +425,24 @@
                 const current = extract(curPrefix);
                 const prev = extract(prevPrefix);
 
-                // Обновление DOM
                 document.getElementById('val-reach').innerText = formatNum(current.reach.tot);
                 document.getElementById('diff-reach').innerHTML = getCompareBadge(current.reach.tot, prev.reach.tot);
-                renderPie('pie-reach', current.reach.byC);
+                renderPie('pie-reach', current.reach.byC, monthIndex);
                 renderLine('line-reach', current.reach.t, '#8b5cf6');
 
                 document.getElementById('val-leads').innerText = formatNum(current.leads.tot);
                 document.getElementById('diff-leads').innerHTML = getCompareBadge(current.leads.tot, prev.leads.tot);
-                renderPie('pie-leads', current.leads.byC);
+                renderPie('pie-leads', current.leads.byC, monthIndex);
                 renderLine('line-leads', current.leads.t, '#3b82f6');
 
                 document.getElementById('val-subs').innerText = formatNum(current.subs.tot);
                 document.getElementById('diff-subs').innerHTML = getCompareBadge(current.subs.tot, prev.subs.tot);
-                renderPie('pie-subs', current.subs.byC);
+                renderPie('pie-subs', current.subs.byC, monthIndex);
                 renderLine('line-subs', current.subs.t, '#10b981');
 
                 document.getElementById('val-err').innerText = formatPerc(current.err.tot);
                 document.getElementById('diff-err').innerHTML = getCompareBadge(current.err.tot, prev.err.tot, true);
-                renderPie('pie-err', current.err.byC, true);
+                renderPie('pie-err', current.err.byC, monthIndex, true);
                 renderLine('line-err', current.err.t, '#64748b', true);
                 
             } catch (error) {
