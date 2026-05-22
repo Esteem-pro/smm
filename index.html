@@ -763,72 +763,167 @@ function formatShortDate(date) {
         }
 
         function renderPie(id, dataObj, monthIndex, isAverage = false) {
-            const canvas = document.getElementById(id);
+    const canvas = document.getElementById(id);
 
-            if (!canvas) return;
+    if (!canvas) return;
 
-            if (smmCharts[id]) {
-                smmCharts[id].destroy();
-            }
+    if (smmCharts[id]) {
+        smmCharts[id].destroy();
+    }
 
-            const defaultColors = [
-                '#e1306c', '#0088cc', '#0077ff', '#10b981', '#ff0000',
-                '#8b5cf6', '#f59e0b', '#14b8a6', '#f43f5e', '#64748b'
-            ];
+    const defaultColors = [
+        '#e1306c', '#0088cc', '#0077ff', '#10b981', '#ff0000',
+        '#8b5cf6', '#f59e0b', '#14b8a6', '#f43f5e', '#64748b'
+    ];
 
-            const labels = [];
-            const values = [];
-            const colors = [];
+    const labels = [];
+    const values = [];
+    const colors = [];
 
-            Object.keys(dataObj || {}).forEach(cKey => {
-                const v = Number(dataObj[cKey]) || 0;
+    Object.keys(dataObj || {}).forEach(cKey => {
+        const v = Number(dataObj[cKey]) || 0;
 
-                if (v > 0) {
-                    labels.push(channelName(monthIndex, cKey));
-                    values.push(v);
-                    colors.push(defaultColors[Number(cKey.replace('c', '')) % defaultColors.length]);
-                }
-            });
+        if (v > 0) {
+            labels.push(channelName(monthIndex, cKey));
+            values.push(v);
+            colors.push(defaultColors[Number(cKey.replace('c', '')) % defaultColors.length]);
+        }
+    });
 
-            if (!values.length) {
-                labels.push('Нет данных');
-                values.push(1);
-                colors.push('#e2e8f0');
-            }
+    if (!values.length) {
+        labels.push('Нет данных');
+        values.push(1);
+        colors.push('#e2e8f0');
+    }
 
-            smmCharts[id] = new Chart(canvas, {
-                type: 'doughnut',
-                data: {
-                    labels,
-                    datasets: [{
-                        data: values,
-                        backgroundColor: colors,
-                        borderWidth: 0
-                    }]
-                },
-                plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '65%',
-                    plugins: {
-                        legend: { display: false },
-                        datalabels: {
-                            color: '#fff',
-                            font: { weight: 'bold', size: 10 },
-                            formatter: v => {
-                                if (labels[0] === 'Нет данных') return '';
-                                if (isAverage) return v.toFixed(1) + '%';
-                                if (v >= 1000000) return (v / 1000000).toFixed(1) + 'M';
-                                if (v >= 1000) return (v / 1000).toFixed(0) + 'k';
-                                return Math.round(v);
-                            }
+    const total = values.reduce((sum, v) => sum + v, 0);
+
+    const labelsWithShares = labels.map((label, index) => {
+        if (label === 'Нет данных') return label;
+
+        const value = values[index] || 0;
+        const share = total > 0 ? (value / total) * 100 : 0;
+
+        return `${label} — ${share.toFixed(1)}%`;
+    });
+
+    smmCharts[id] = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            labels: labelsWithShares,
+            datasets: [{
+                data: values,
+                backgroundColor: colors,
+                borderColor: '#ffffff',
+                borderWidth: 3,
+                hoverOffset: 6
+            }]
+        },
+        plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '66%',
+            layout: {
+                padding: 8
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        boxWidth: 7,
+                        boxHeight: 7,
+                        padding: 12,
+                        color: '#64748b',
+                        font: {
+                            family: 'Inter',
+                            size: 10,
+                            weight: '700'
+                        },
+
+                        generateLabels: function(chart) {
+                            const dataset = chart.data.datasets[0];
+
+                            return chart.data.labels.map((label, i) => {
+                                const value = dataset.data[i] || 0;
+                                const rawName = labels[i] || label;
+                                const share = total > 0 ? (value / total) * 100 : 0;
+
+                                const shownValue = isAverage
+                                    ? value.toFixed(1) + '%'
+                                    : formatNum(value);
+
+                                return {
+                                    text: rawName === 'Нет данных'
+                                        ? rawName
+                                        : `${rawName}: ${shownValue} · ${share.toFixed(1)}%`,
+                                    fillStyle: dataset.backgroundColor[i],
+                                    strokeStyle: dataset.backgroundColor[i],
+                                    lineWidth: 0,
+                                    hidden: false,
+                                    index: i
+                                };
+                            });
                         }
                     }
-                }
-            });
-        }
+                },
 
+                tooltip: {
+                    callbacks: {
+                        title: function(context) {
+                            const index = context[0].dataIndex;
+                            return labels[index] || '';
+                        },
+                        label: function(context) {
+                            const value = Number(context.raw) || 0;
+                            const percent = total > 0 ? (value / total * 100) : 0;
+
+                            const shownValue = isAverage
+                                ? value.toFixed(2) + '%'
+                                : formatNum(value);
+
+                            return `Значение: ${shownValue}; Доля: ${percent.toFixed(1)}%`;
+                        }
+                    }
+                },
+
+                datalabels: {
+                    display: function(context) {
+                        if (labels[0] === 'Нет данных') return false;
+
+                        const value = Number(context.dataset.data[context.dataIndex]) || 0;
+                        const percent = total > 0 ? (value / total * 100) : 0;
+
+                        // На графике показываем только сектора от 8%,
+                        // чтобы мелкие подписи не слипались.
+                        return percent >= 8;
+                    },
+                    color: '#fff',
+                    font: {
+                        weight: '800',
+                        size: 11
+                    },
+                    formatter: function(value) {
+                        const percent = total > 0 ? (value / total * 100) : 0;
+
+                        const shownValue = isAverage
+                            ? value.toFixed(1) + '%'
+                            : (
+                                value >= 1000000 ? (value / 1000000).toFixed(1) + 'M' :
+                                value >= 1000 ? (value / 1000).toFixed(0) + 'k' :
+                                Math.round(value)
+                            );
+
+                        return `${shownValue}\n${percent.toFixed(1)}%`;
+                    }
+                }
+            }
+        }
+    });
+}
         function renderLine(id, labels, timelineArray, color, isPercent = false) {
             const canvas = document.getElementById(id);
 
