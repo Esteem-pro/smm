@@ -501,15 +501,13 @@
         }
 
         function isReachMetric(name) {
-            const s = String(name || '').toLowerCase();
-
-            return !isPercentMetric(name) && (
-                s.includes('охват') ||
-                s.includes('показы') ||
-                s.includes('просмотры') ||
-                s.includes('посещения профиля')
-            );
-        }
+    const s = String(name || '').toLowerCase();
+    return !isPercentMetric(name) && (
+        s.includes('охват') ||
+        s.includes('показы') ||
+        s.includes('просмотры')
+    );
+}
 
         function isLeadMetric(name) {
             return String(name || '').toLowerCase().includes('лиды');
@@ -784,18 +782,18 @@
                 merged.err.errSimpleSum += part.err.errSimpleSum || 0;
                 merged.err.errSimpleCount += part.err.errSimpleCount || 0;
 
-                Object.keys(part.err.byC || {}).forEach(cKey => {
-                    if (!merged.err.byCErr[cKey]) {
-                        merged.err.byCErr[cKey] = { weighted: 0, weight: 0, sum: 0, count: 0 };
-                    }
+                Object.keys(part.err.byCErr || {}).forEach(cKey => {
+    if (!merged.err.byCErr[cKey]) {
+        merged.err.byCErr[cKey] = { weighted: 0, weight: 0, sum: 0, count: 0 };
+    }
+    
+    const pItem = part.err.byCErr[cKey];
+    merged.err.byCErr[cKey].weighted += pItem.weighted || 0;
+    merged.err.byCErr[cKey].weight += pItem.weight || 0;
+    merged.err.byCErr[cKey].sum += pItem.sum || 0;
+    merged.err.byCErr[cKey].count += pItem.count || 0;
+});
 
-                    const val = part.err.byC[cKey] || 0;
-
-                    if (val > 0) {
-                        merged.err.byCErr[cKey].sum += val;
-                        merged.err.byCErr[cKey].count += 1;
-                    }
-                });
             });
 
             Object.keys(merged.err.byCErr).forEach(cKey => {
