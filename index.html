@@ -329,7 +329,7 @@
             </div>
         </main>
 
-                <main class="scroll-area hidden" id="view-global">
+                        <main class="scroll-area hidden" id="view-global">
             <div class="max-w-7xl mx-auto p-4 sm:p-6">
                 
                 <div class="flex flex-col sm:flex-row gap-4 mb-6 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
@@ -338,6 +338,33 @@
                         <select id="global-channel" class="filter-input w-full sm:w-auto min-w-[180px]">
                             <option value="all">Все каналы</option>
                         </select>
+                    </div>
+                    <div>
+                        <span class="filter-label">Группировка</span>
+                        <select id="global-grouping" class="filter-input w-full sm:w-auto min-w-[180px]">
+                            <option value="month">По месяцам</option>
+                            <option value="quarter">По кварталам</option>
+                            <option value="year">По годам</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center">
+                        <span class="metric-title text-[10px]">Суммарный охват</span>
+                        <span class="metric-value text-2xl mt-1" id="global-tot-reach">0</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center">
+                        <span class="metric-title text-[10px] flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-500 block"></span>Всего лидов</span>
+                        <span class="metric-value text-2xl text-blue-600 mt-1" id="global-tot-leads">0</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center">
+                        <span class="metric-title text-[10px] flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500 block"></span>Подписчики</span>
+                        <span class="metric-value text-2xl mt-1" id="global-tot-subs">0</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center">
+                        <span class="metric-title text-[10px]">Средний ERR</span>
+                        <span class="metric-value text-2xl text-slate-700 mt-1" id="global-tot-err">0%</span>
                     </div>
                 </div>
 
@@ -358,22 +385,22 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="bento-card h-[360px]">
-                        <span class="metric-title mb-4">Охват / показы / просмотры по месяцам</span>
+                        <span class="metric-title mb-4">Охват / показы / просмотры</span>
                         <canvas id="global-reach"></canvas>
                     </div>
 
                     <div class="bento-card h-[360px]">
-                        <span class="metric-title mb-4">Лиды по месяцам</span>
+                        <span class="metric-title mb-4">Лиды</span>
                         <canvas id="global-leads"></canvas>
                     </div>
 
                     <div class="bento-card h-[360px]">
-                        <span class="metric-title mb-4">Приток подписчиков по месяцам</span>
+                        <span class="metric-title mb-4">Приток подписчиков</span>
                         <canvas id="global-subs"></canvas>
                     </div>
 
                     <div class="bento-card h-[360px]">
-                        <span class="metric-title mb-4">ERR по месяцам</span>
+                        <span class="metric-title mb-4">ERR</span>
                         <canvas id="global-err"></canvas>
                     </div>
                 </div>
@@ -1076,12 +1103,9 @@
 
         function renderGlobalChart(id, labels, values, color, isPercent = false) {
             const canvas = document.getElementById(id);
-
             if (!canvas) return;
 
-            if (smmCharts[id]) {
-                smmCharts[id].destroy();
-            }
+            if (smmCharts[id]) smmCharts[id].destroy();
 
             smmCharts[id] = new Chart(canvas, {
                 type: 'bar',
@@ -1090,7 +1114,8 @@
                     datasets: [{
                         data: values,
                         backgroundColor: color,
-                        borderRadius: 10
+                        borderRadius: 10,
+                        clip: false // <--- Запрещаем обрезать всё, что вылезает за края!
                     }]
                 },
                 plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
@@ -1098,7 +1123,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     layout: {
-                        padding: { top: 25 } // Воздух сверху для цифр
+                        padding: { top: 35, right: 10, left: 10 } // <--- Жестко даем воздух сверху и по бокам
                     },
                     plugins: {
                         legend: { display: false },
@@ -1106,7 +1131,7 @@
                             color: '#0f172a',
                             anchor: 'end',
                             align: 'end',
-                            offset: 4, // Чуть отодвигаем цифру от столбика
+                            offset: 4,
                             font: { weight: 'bold', size: 10 },
                             formatter: v => isPercent ? v.toFixed(1) + '%' : formatNum(v)
                         }
@@ -1115,7 +1140,7 @@
                         x: { grid: { display: false } },
                         y: {
                             beginAtZero: true,
-                            grace: '15%', // Увеличиваем максимум шкалы на 15% для пространства под цифры
+                            grace: '10%',
                             ticks: {
                                 callback: v => isPercent ? v + '%' : v
                             }
@@ -1226,10 +1251,10 @@
         function renderGlobalData() {
             if (!monthsData.length) return;
 
-            // 1. Обновляем выпадающий список фильтра для глобальной вкладки
-            const selectEl = document.getElementById('global-channel');
-            const currentFilter = selectEl.value || 'all';
-            selectEl.innerHTML = '<option value="all">Все каналы</option>';
+            // 1. Обновляем селекты
+            const channelEl = document.getElementById('global-channel');
+            const currentChannel = channelEl.value || 'all';
+            channelEl.innerHTML = '<option value="all">Все каналы</option>';
             
             const latestChannels = monthsData[monthsData.length - 1]?.smmChannels || [];
             latestChannels.forEach((ch, idx) => {
@@ -1237,27 +1262,32 @@
                 const opt = document.createElement('option');
                 opt.value = `c${idx}`;
                 opt.innerText = ch.name || `Канал ${idx + 1}`;
-                selectEl.appendChild(opt);
+                channelEl.appendChild(opt);
             });
-            // Возвращаем выбранное значение, если оно еще актуально
-            selectEl.value = [...selectEl.options].some(o => o.value === currentFilter) ? currentFilter : 'all';
+            channelEl.value = [...channelEl.options].some(o => o.value === currentChannel) ? currentChannel : 'all';
 
-            const activeChannel = selectEl.value;
+            const activeChannel = channelEl.value;
+            const grouping = document.getElementById('global-grouping').value;
 
-            const labels = [];
-            const reach = [];
-            const leads = [];
-            const subs = [];
-            const err = [];
+            // Переменные для группировки данных (по оси X)
+            const groupedData = {};
 
-            // Объекты для накопления данных для бубликов
-            const totalReachByC = {};
-            const totalLeadsByC = {};
-            const totalSubsByC = {};
+            // Переменные для общих итогов (Top Cards)
+            let totalReach = 0;
+            let totalLeads = 0;
+            let totalSubs = 0;
+            let totalErrWeighted = 0;
+            let totalErrWeight = 0;
+            let totalErrSimpleSum = 0;
+            let totalErrSimpleCount = 0;
+
+            // Переменные для бубликов
+            const pieReach = {};
+            const pieLeads = {};
+            const pieSubs = {};
 
             monthsData.forEach((m, mI) => {
                 const { year, monthIndex } = getMonthYear(m);
-
                 if (!Number.isFinite(year) || monthIndex < 0) return;
 
                 const start = new Date(year, monthIndex, 1);
@@ -1266,32 +1296,80 @@
 
                 if (dateOnly(start) > todayOnly()) return;
 
-                // Оставляем только месяц (убираем год) для аккуратности
-                labels.push(String(m.name || '').split(' ')[0]);
+                // Определяем ключ (Label) для текущего блока в зависимости от фильтра
+                let groupKey = '';
+                if (grouping === 'month') {
+                    // Короткое имя месяца, например "Май" (без года)
+                    groupKey = String(m.name || '').split(' ')[0];
+                } else if (grouping === 'quarter') {
+                    const q = Math.floor(monthIndex / 3) + 1;
+                    groupKey = `Q${q} ${year}`;
+                } else if (grouping === 'year') {
+                    groupKey = `${year}`;
+                }
+
+                if (!groupedData[groupKey]) {
+                    groupedData[groupKey] = { reach: 0, leads: 0, subs: 0, errWeighted: 0, errWeight: 0, errSimpleSum: 0, errSimpleCount: 0 };
+                }
 
                 const data = extractSMMRangeMultiMonth(start, actualEnd, activeChannel);
 
-                reach.push(data.reach.tot);
-                leads.push(data.leads.tot);
-                subs.push(data.subs.tot);
-                err.push(data.err.tot);
+                // Плюсуем данные в группу (для столбовых графиков)
+                groupedData[groupKey].reach += data.reach.tot;
+                groupedData[groupKey].leads += data.leads.tot;
+                groupedData[groupKey].subs += data.subs.tot;
+                groupedData[groupKey].errWeighted += data.err.errWeighted;
+                groupedData[groupKey].errWeight += data.err.errWeight;
+                groupedData[groupKey].errSimpleSum += data.err.errSimpleSum;
+                groupedData[groupKey].errSimpleCount += data.err.errSimpleCount;
 
-                // Суммируем данные по каналам за все месяцы
-                Object.keys(data.reach.byC || {}).forEach(k => totalReachByC[k] = (totalReachByC[k] || 0) + data.reach.byC[k]);
-                Object.keys(data.leads.byC || {}).forEach(k => totalLeadsByC[k] = (totalLeadsByC[k] || 0) + data.leads.byC[k]);
-                Object.keys(data.subs.byC || {}).forEach(k => totalSubsByC[k] = (totalSubsByC[k] || 0) + data.subs.byC[k]);
+                // Плюсуем данные в общие итоги (для Top Cards)
+                totalReach += data.reach.tot;
+                totalLeads += data.leads.tot;
+                totalSubs += data.subs.tot;
+                totalErrWeighted += data.err.errWeighted;
+                totalErrWeight += data.err.errWeight;
+                totalErrSimpleSum += data.err.errSimpleSum;
+                totalErrSimpleCount += data.err.errSimpleCount;
+
+                // Плюсуем данные в бублики
+                Object.keys(data.reach.byC || {}).forEach(k => pieReach[k] = (pieReach[k] || 0) + data.reach.byC[k]);
+                Object.keys(data.leads.byC || {}).forEach(k => pieLeads[k] = (pieLeads[k] || 0) + data.leads.byC[k]);
+                Object.keys(data.subs.byC || {}).forEach(k => pieSubs[k] = (pieSubs[k] || 0) + data.subs.byC[k]);
             });
 
+            // Подготавливаем массивы для Chart.js
+            const labels = Object.keys(groupedData);
+            const arrReach = labels.map(k => groupedData[k].reach);
+            const arrLeads = labels.map(k => groupedData[k].leads);
+            const arrSubs = labels.map(k => groupedData[k].subs);
+            const arrErr = labels.map(k => {
+                const g = groupedData[k];
+                if (g.errWeight > 0) return g.errWeighted / g.errWeight;
+                if (g.errSimpleCount > 0) return g.errSimpleSum / g.errSimpleCount;
+                return 0;
+            });
+
+            // Обновляем текст в Top Cards
+            document.getElementById('global-tot-reach').innerText = formatNum(totalReach);
+            document.getElementById('global-tot-leads').innerText = formatNum(totalLeads);
+            document.getElementById('global-tot-subs').innerText = formatNum(totalSubs);
+            
+            const finalErr = totalErrWeight > 0 
+                ? (totalErrWeighted / totalErrWeight) 
+                : (totalErrSimpleCount > 0 ? totalErrSimpleSum / totalErrSimpleCount : 0);
+            document.getElementById('global-tot-err').innerText = formatPerc(finalErr);
+
             // Отрисовываем столбовые графики
-            renderGlobalChart('global-reach', labels, reach, '#8b5cf6');
-            renderGlobalChart('global-leads', labels, leads, '#3b82f6');
-            renderGlobalChart('global-subs', labels, subs, '#10b981');
-            renderGlobalChart('global-err', labels, err, '#64748b', true);
+            renderGlobalChart('global-reach', labels, arrReach, '#8b5cf6');
+            renderGlobalChart('global-leads', labels, arrLeads, '#3b82f6');
+            renderGlobalChart('global-subs', labels, arrSubs, '#10b981');
+            renderGlobalChart('global-err', labels, arrErr, '#64748b', true);
 
             // Отрисовываем круговые графики
-            renderGlobalDoughnut('global-pie-reach', totalReachByC);
-            renderGlobalDoughnut('global-pie-leads', totalLeadsByC);
-            renderGlobalDoughnut('global-pie-subs', totalSubsByC);
+            renderGlobalDoughnut('global-pie-reach', pieReach);
+            renderGlobalDoughnut('global-pie-leads', pieLeads);
+            renderGlobalDoughnut('global-pie-subs', pieSubs);
         }
 
         document.getElementById('login-btn').addEventListener('click', () => {
@@ -1302,6 +1380,9 @@
             processCurrentMonthData();
         });
 document.getElementById('global-channel').addEventListener('change', () => {
+            renderGlobalData();
+        });
+        document.getElementById('global-grouping').addEventListener('change', () => {
             renderGlobalData();
         });
         onAuthStateChanged(auth, (user) => {
