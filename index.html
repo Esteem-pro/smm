@@ -329,8 +329,33 @@
             </div>
         </main>
 
-        <main class="scroll-area hidden" id="view-global">
+                <main class="scroll-area hidden" id="view-global">
             <div class="max-w-7xl mx-auto p-4 sm:p-6">
+                
+                <div class="flex flex-col sm:flex-row gap-4 mb-6 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                    <div>
+                        <span class="filter-label">SMM канал</span>
+                        <select id="global-channel" class="filter-input w-full sm:w-auto min-w-[180px]">
+                            <option value="all">Все каналы</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="bento-card h-[320px]">
+                        <span class="metric-title mb-2 text-center">Распределение: Охват</span>
+                        <canvas id="global-pie-reach"></canvas>
+                    </div>
+                    <div class="bento-card h-[320px]">
+                        <span class="metric-title mb-2 text-center">Распределение: Лиды</span>
+                        <canvas id="global-pie-leads"></canvas>
+                    </div>
+                    <div class="bento-card h-[320px]">
+                        <span class="metric-title mb-2 text-center">Распределение: Подписчики</span>
+                        <canvas id="global-pie-subs"></canvas>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="bento-card h-[360px]">
                         <span class="metric-title mb-4">Охват / показы / просмотры по месяцам</span>
@@ -924,6 +949,79 @@
             }).join('');
         }
 
+        function renderGlobalDoughnut(id, dataObj) {
+            const canvas = document.getElementById(id);
+            if (!canvas) return;
+
+            if (smmCharts[id]) {
+                smmCharts[id].destroy();
+            }
+
+            // Фирменная палитра
+            const defaultColors = [
+                '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
+                '#ec4899', '#06b6d4', '#84cc16', '#14b8a6', '#64748b'
+            ];
+
+            const labels = [];
+            const data = [];
+            const backgroundColor = [];
+
+            // Берем названия каналов из последнего доступного месяца
+            const latestMonthIndex = monthsData.length - 1;
+
+            Object.keys(dataObj || {}).forEach(cKey => {
+                const value = Number(dataObj[cKey]) || 0;
+                if (value > 0) {
+                    const cNum = Number(String(cKey).replace('c', ''));
+                    labels.push(channelName(latestMonthIndex, cKey));
+                    data.push(value);
+                    backgroundColor.push(defaultColors[cNum % defaultColors.length]);
+                }
+            });
+
+            smmCharts[id] = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        data,
+                        backgroundColor,
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 4
+                    }]
+                },
+                plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%', // Делаем тонкий стильный "бублик"
+                    layout: { padding: 10 },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15,
+                                font: { size: 11, family: "'Inter', sans-serif", weight: '600' }
+                            }
+                        },
+                        datalabels: {
+                            color: '#ffffff',
+                            font: { weight: 'bold', size: 11 },
+                            formatter: (value, ctx) => {
+                                let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                let percentage = (value * 100 / sum);
+                                // Скрываем проценты, если доля меньше 4%, чтобы не было каши
+                                return percentage > 4 ? percentage.toFixed(0) + "%" : "";
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
         function renderLine(id, labels, timelineArray, color, isPercent = false) {
             const canvas = document.getElementById(id);
 
@@ -999,12 +1097,16 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: {
+                        padding: { top: 25 } // Воздух сверху для цифр
+                    },
                     plugins: {
                         legend: { display: false },
                         datalabels: {
                             color: '#0f172a',
                             anchor: 'end',
                             align: 'end',
+                            offset: 4, // Чуть отодвигаем цифру от столбика
                             font: { weight: 'bold', size: 10 },
                             formatter: v => isPercent ? v.toFixed(1) + '%' : formatNum(v)
                         }
@@ -1013,12 +1115,15 @@
                         x: { grid: { display: false } },
                         y: {
                             beginAtZero: true,
+                            grace: '15%', // Увеличиваем максимум шкалы на 15% для пространства под цифры
                             ticks: {
                                 callback: v => isPercent ? v + '%' : v
                             }
                         }
                     }
                 }
+            });
+        }
             });
         }
 
@@ -1123,11 +1228,34 @@
         function renderGlobalData() {
             if (!monthsData.length) return;
 
+            // 1. Обновляем выпадающий список фильтра для глобальной вкладки
+            const selectEl = document.getElementById('global-channel');
+            const currentFilter = selectEl.value || 'all';
+            selectEl.innerHTML = '<option value="all">Все каналы</option>';
+            
+            const latestChannels = monthsData[monthsData.length - 1]?.smmChannels || [];
+            latestChannels.forEach((ch, idx) => {
+                if (!ch) return;
+                const opt = document.createElement('option');
+                opt.value = `c${idx}`;
+                opt.innerText = ch.name || `Канал ${idx + 1}`;
+                selectEl.appendChild(opt);
+            });
+            // Возвращаем выбранное значение, если оно еще актуально
+            selectEl.value = [...selectEl.options].some(o => o.value === currentFilter) ? currentFilter : 'all';
+
+            const activeChannel = selectEl.value;
+
             const labels = [];
             const reach = [];
             const leads = [];
             const subs = [];
             const err = [];
+
+            // Объекты для накопления данных для бубликов
+            const totalReachByC = {};
+            const totalLeadsByC = {};
+            const totalSubsByC = {};
 
             monthsData.forEach((m, mI) => {
                 const { year, monthIndex } = getMonthYear(m);
@@ -1140,20 +1268,32 @@
 
                 if (dateOnly(start) > todayOnly()) return;
 
-                labels.push(String(m.name || '').replace(' 2026', ''));
+                // Оставляем только месяц (убираем год) для аккуратности
+                labels.push(String(m.name || '').split(' ')[0]);
 
-                const data = extractSMMRangeMultiMonth(start, actualEnd, 'all');
+                const data = extractSMMRangeMultiMonth(start, actualEnd, activeChannel);
 
                 reach.push(data.reach.tot);
                 leads.push(data.leads.tot);
                 subs.push(data.subs.tot);
                 err.push(data.err.tot);
+
+                // Суммируем данные по каналам за все месяцы
+                Object.keys(data.reach.byC || {}).forEach(k => totalReachByC[k] = (totalReachByC[k] || 0) + data.reach.byC[k]);
+                Object.keys(data.leads.byC || {}).forEach(k => totalLeadsByC[k] = (totalLeadsByC[k] || 0) + data.leads.byC[k]);
+                Object.keys(data.subs.byC || {}).forEach(k => totalSubsByC[k] = (totalSubsByC[k] || 0) + data.subs.byC[k]);
             });
 
+            // Отрисовываем столбовые графики
             renderGlobalChart('global-reach', labels, reach, '#8b5cf6');
             renderGlobalChart('global-leads', labels, leads, '#3b82f6');
             renderGlobalChart('global-subs', labels, subs, '#10b981');
             renderGlobalChart('global-err', labels, err, '#64748b', true);
+
+            // Отрисовываем круговые графики
+            renderGlobalDoughnut('global-pie-reach', totalReachByC);
+            renderGlobalDoughnut('global-pie-leads', totalLeadsByC);
+            renderGlobalDoughnut('global-pie-subs', totalSubsByC);
         }
 
         document.getElementById('login-btn').addEventListener('click', () => {
@@ -1163,7 +1303,9 @@
         document.getElementById('current-channel').addEventListener('change', () => {
             processCurrentMonthData();
         });
-
+document.getElementById('global-channel').addEventListener('change', () => {
+            renderGlobalData();
+        });
         onAuthStateChanged(auth, (user) => {
             if (!user) return;
 
