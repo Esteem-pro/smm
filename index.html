@@ -1107,9 +1107,9 @@
 
             if (smmCharts[id]) smmCharts[id].destroy();
 
-            // 1. Находим самое большое значение на графике
+            // Находим самое большое значение на графике
             const maxValue = values.length > 0 ? Math.max(...values) : 0;
-            // 2. Принудительно задаем "потолок" на 20% выше максимального значения
+            // Принудительно задаем "потолок" на 20% выше максимального значения
             const topMargin = maxValue * 1.20;
 
             smmCharts[id] = new Chart(canvas, {
@@ -1128,24 +1128,30 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     layout: {
-                        padding: { top: 20, right: 10, left: 10 }
+                        // ДОБАВИЛИ bottom: 20, чтобы поднять ось X от нижнего края
+                        padding: { top: 20, right: 10, left: 10, bottom: 20 } 
                     },
                     plugins: {
                         legend: { display: false },
                         datalabels: {
                             color: '#0f172a',
                             anchor: 'end',
-                            align: 'top', // Выравниваем строго поверх столбца
-                            offset: 6,    // Даем небольшой отступ от самого столбца
+                            align: 'top', 
+                            offset: 6,    
                             font: { weight: 'bold', size: 11 },
                             formatter: v => isPercent ? v.toFixed(1) + '%' : formatNum(v)
                         }
                     },
                     scales: {
-                        x: { grid: { display: false } },
+                        x: { 
+                            grid: { display: false },
+                            ticks: {
+                                padding: 5 // Чуть отодвигаем сам текст от линии оси
+                            }
+                        },
                         y: {
                             beginAtZero: true,
-                            suggestedMax: topMargin, // Применяем наш рассчитанный потолок
+                            suggestedMax: topMargin, 
                             ticks: {
                                 callback: v => isPercent ? v + '%' : v
                             }
