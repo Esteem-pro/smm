@@ -1097,65 +1097,91 @@
             });
         }
 
-        function renderGlobalChart(id, labels, values, color, isPercent = false) {
-            const canvas = document.getElementById(id);
-            if (!canvas) return;
+function renderGlobalChart(id, labels, values, forecastValues, color, isPercent = false) {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
 
-            if (smmCharts[id]) smmCharts[id].destroy();
+    if (smmCharts[id]) smmCharts[id].destroy();
 
-            // Находим самое большое значение на графике
-            const maxValue = values.length > 0 ? Math.max(...values) : 0;
-            // Принудительно задаем "потолок" на 20% выше максимального значения
-            const topMargin = maxValue * 1.20;
+    // Считаем потолок для Y оси на основе полных (прогнозных) значений
+    const totals = values.map((v, i) => v + (forecastValues[i] || 0));
+    const maxValue = totals.length > 0 ? Math.max(...totals) : 0;
+    const topMargin = maxValue * 1.20;
 
-            smmCharts[id] = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels,
-                    datasets: [{
-                        data: values,
-                        backgroundColor: color,
-                        borderRadius: 10,
-                        clip: false
-                    }]
+    smmCharts[id] = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Факт',
+                    data: values,
+                    backgroundColor: color,
+                    // Если сверху есть прогноз, скругляем только низ. Иначе все углы.
+                    borderRadius: (ctx) => {
+                        const hasForecast = forecastValues[ctx.dataIndex] > 0;
+                        return hasForecast ? { topLeft: 0, topRight: 0, bottomLeft: 10, bottomRight: 10 } : 10;
+                    }
                 },
-                plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    layout: {
-                        // ДОБАВИЛИ bottom: 20, чтобы поднять ось X от нижнего края
-                        padding: { top: 20, right: 10, left: 10, bottom: 20 } 
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        datalabels: {
-                            color: '#0f172a',
-                            anchor: 'end',
-                            align: 'top', 
-                            offset: 6,    
-                            font: { weight: 'bold', size: 11 },
-                            formatter: v => isPercent ? v.toFixed(1) + '%' : formatNum(v)
-                        }
-                    },
-                    scales: {
-                        x: { 
-                            grid: { display: false },
-                            ticks: {
-                                padding: 5 // Чуть отодвигаем сам текст от линии оси
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            suggestedMax: topMargin, 
-                            ticks: {
-                                callback: v => isPercent ? v + '%' : v
-                            }
-                        }
+                {
+                    label: 'Прогноз',
+                    data: forecastValues,
+                    backgroundColor: '#fbbf24', // Стильный желтый (Amber 400)
+                    borderRadius: { topLeft: 10, topRight: 10, bottomLeft: 0, bottomRight: 0 },
+                    borderSkipped: 'bottom'
+                }
+            ]
+        },
+        plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false // При наведении показываем и факт, и прогноз
+            },
+            layout: {
+                padding: { top: 20, right: 10, left: 10, bottom: 20 } 
+            },
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    color: '#0f172a',
+                    anchor: 'end',
+                    align: 'top', 
+                    offset: 6,    
+                    font: { weight: 'bold', size: 11 },
+                    formatter: (value, context) => {
+                        const dataIdx = context.dataIndex;
+                        const hasForecast = forecastValues[dataIdx] > 0;
+
+                        // Оставляем только один лейбл над всем столбцом, скрываем у нижнего куска
+                        if (context.datasetIndex === 0 && hasForecast) return null;
+
+                        const total = values[dataIdx] + forecastValues[dataIdx];
+                        if (total === 0) return '';
+                        return isPercent ? total.toFixed(1) + '%' : formatNum(total);
                     }
                 }
-            });
+            },
+            scales: {
+                x: { 
+                    stacked: true, // Включаем наложение
+                    grid: { display: false },
+                    ticks: { padding: 5 }
+                },
+                y: {
+                    stacked: true, // Включаем наложение
+                    beginAtZero: true,
+                    suggestedMax: topMargin, 
+                    ticks: {
+                        callback: v => isPercent ? v + '%' : v
+                    }
+                }
+            }
         }
+    });
+}
 
         function processCurrentMonthData() {
             try {
@@ -1293,20 +1319,19 @@
             const pieLeads = {};
             const pieSubs = {};
 
-            monthsData.forEach((m, mI) => {
+monthsData.forEach((m, mI) => {
                 const { year, monthIndex } = getMonthYear(m);
                 if (!Number.isFinite(year) || monthIndex < 0) return;
 
                 const start = new Date(year, monthIndex, 1);
                 const end = new Date(year, monthIndex + 1, 0);
+                const today = todayOnly();
                 const actualEnd = getActualEndDate(start, end);
 
-                if (dateOnly(start) > todayOnly()) return;
+                if (dateOnly(start) > today) return;
 
-                // Определяем ключ (Label) для текущего блока в зависимости от фильтра
                 let groupKey = '';
                 if (grouping === 'month') {
-                    // Короткое имя месяца, например "Май" (без года)
                     groupKey = String(m.name || '').split(' ')[0];
                 } else if (grouping === 'quarter') {
                     const q = Math.floor(monthIndex / 3) + 1;
@@ -1316,21 +1341,44 @@
                 }
 
                 if (!groupedData[groupKey]) {
-                    groupedData[groupKey] = { reach: 0, leads: 0, subs: 0, errWeighted: 0, errWeight: 0, errSimpleSum: 0, errSimpleCount: 0 };
+                    groupedData[groupKey] = { 
+                        reach: 0, leads: 0, subs: 0, 
+                        errWeighted: 0, errWeight: 0, errSimpleSum: 0, errSimpleCount: 0,
+                        fcstReach: 0, fcstLeads: 0, fcstSubs: 0 // Контейнеры для прогноза
+                    };
                 }
 
                 const data = extractSMMRangeMultiMonth(start, actualEnd, activeChannel);
 
-                // Плюсуем данные в группу (для столбовых графиков)
+                // Расчет линейного прогноза для текущего незаконченного месяца
+                let fcstReach = 0, fcstLeads = 0, fcstSubs = 0;
+                
+                if (today >= start && today <= end) {
+                    const daysPassed = daysBetweenInclusive(start, actualEnd);
+                    const daysInMonth = end.getDate();
+                    
+                    if (daysPassed > 0 && daysPassed < daysInMonth) {
+                        // Множитель: остаток дней / прошедшие дни
+                        const multiplier = (daysInMonth - daysPassed) / daysPassed;
+                        fcstReach = data.reach.tot * multiplier;
+                        fcstLeads = data.leads.tot * multiplier;
+                        fcstSubs = data.subs.tot * multiplier;
+                    }
+                }
+
                 groupedData[groupKey].reach += data.reach.tot;
                 groupedData[groupKey].leads += data.leads.tot;
                 groupedData[groupKey].subs += data.subs.tot;
+                
+                groupedData[groupKey].fcstReach += fcstReach;
+                groupedData[groupKey].fcstLeads += fcstLeads;
+                groupedData[groupKey].fcstSubs += fcstSubs;
+
                 groupedData[groupKey].errWeighted += data.err.errWeighted;
                 groupedData[groupKey].errWeight += data.err.errWeight;
                 groupedData[groupKey].errSimpleSum += data.err.errSimpleSum;
                 groupedData[groupKey].errSimpleCount += data.err.errSimpleCount;
 
-                // Плюсуем данные в общие итоги (для Top Cards)
                 totalReach += data.reach.tot;
                 totalLeads += data.leads.tot;
                 totalSubs += data.subs.tot;
@@ -1339,14 +1387,14 @@
                 totalErrSimpleSum += data.err.errSimpleSum;
                 totalErrSimpleCount += data.err.errSimpleCount;
 
-                // Плюсуем данные в бублики
                 Object.keys(data.reach.byC || {}).forEach(k => pieReach[k] = (pieReach[k] || 0) + data.reach.byC[k]);
                 Object.keys(data.leads.byC || {}).forEach(k => pieLeads[k] = (pieLeads[k] || 0) + data.leads.byC[k]);
                 Object.keys(data.subs.byC || {}).forEach(k => pieSubs[k] = (pieSubs[k] || 0) + data.subs.byC[k]);
             });
 
-            // Подготавливаем массивы для Chart.js
             const labels = Object.keys(groupedData);
+            
+            // Формируем массивы факта
             const arrReach = labels.map(k => groupedData[k].reach);
             const arrLeads = labels.map(k => groupedData[k].leads);
             const arrSubs = labels.map(k => groupedData[k].subs);
@@ -1357,7 +1405,12 @@
                 return 0;
             });
 
-            // Обновляем текст в Top Cards
+            // Формируем массивы прогноза
+            const arrReachFcst = labels.map(k => groupedData[k].fcstReach);
+            const arrLeadsFcst = labels.map(k => groupedData[k].fcstLeads);
+            const arrSubsFcst = labels.map(k => groupedData[k].fcstSubs);
+            const arrErrFcst = labels.map(k => 0); // Для ERR прогноз не строится
+
             document.getElementById('global-tot-reach').innerText = formatNum(totalReach);
             document.getElementById('global-tot-leads').innerText = formatNum(totalLeads);
             document.getElementById('global-tot-subs').innerText = formatNum(totalSubs);
@@ -1367,13 +1420,12 @@
                 : (totalErrSimpleCount > 0 ? totalErrSimpleSum / totalErrSimpleCount : 0);
             document.getElementById('global-tot-err').innerText = formatPerc(finalErr);
 
-            // Отрисовываем столбовые графики
-            renderGlobalChart('global-reach', labels, arrReach, '#8b5cf6');
-            renderGlobalChart('global-leads', labels, arrLeads, '#3b82f6');
-            renderGlobalChart('global-subs', labels, arrSubs, '#10b981');
-            renderGlobalChart('global-err', labels, arrErr, '#64748b', true);
+            // Отрисовываем графики (передаем новые массивы)
+            renderGlobalChart('global-reach', labels, arrReach, arrReachFcst, '#8b5cf6');
+            renderGlobalChart('global-leads', labels, arrLeads, arrLeadsFcst, '#3b82f6');
+            renderGlobalChart('global-subs', labels, arrSubs, arrSubsFcst, '#10b981');
+            renderGlobalChart('global-err', labels, arrErr, arrErrFcst, '#64748b', true);
 
-            // Отрисовываем круговые графики
             renderGlobalDoughnut('global-pie-reach', pieReach);
             renderGlobalDoughnut('global-pie-leads', pieLeads);
             renderGlobalDoughnut('global-pie-subs', pieSubs);
