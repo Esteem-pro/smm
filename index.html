@@ -197,7 +197,11 @@
                 <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">
                     SMM Аналитика: <span id="current-month-label" class="text-blue-600">...</span>
                 </h1>
-                <div id="sync-status" class="text-xs font-bold text-slate-400 mt-1">Ожидание Firebase...</div>
+                <div class="flex items-center gap-2 mt-1">
+                    <div id="sync-status" class="text-xs font-bold text-slate-400">Ожидание Firebase...</div>
+                    <div id="actual-date-badge" class="hidden text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200 transition-all">
+                        </div>
+                </div>
             </div>
 
             <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
@@ -325,7 +329,7 @@
             </div>
         </main>
 
-                        <main class="scroll-area hidden" id="view-global">
+        <main class="scroll-area hidden" id="view-global">
             <div class="max-w-7xl mx-auto p-4 sm:p-6">
                 
                 <div class="flex flex-col sm:flex-row gap-4 mb-6 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
@@ -549,13 +553,13 @@
         }
 
         function isReachMetric(name) {
-    const s = String(name || '').toLowerCase();
-    return !isPercentMetric(name) && (
-        s.includes('охват') ||
-        s.includes('показы') ||
-        s.includes('просмотры')
-    );
-}
+            const s = String(name || '').toLowerCase();
+            return !isPercentMetric(name) && (
+                s.includes('охват') ||
+                s.includes('показы') ||
+                s.includes('просмотры')
+            );
+        }
 
         function isLeadMetric(name) {
             return String(name || '').toLowerCase().includes('лиды');
@@ -584,6 +588,58 @@
             const label = date.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
             document.getElementById('current-month-label').innerText = label.charAt(0).toUpperCase() + label.slice(1);
         }
+
+        // --- НОВЫЕ ФУНКЦИИ ДЛЯ РАСЧЕТА АКТУАЛЬНОЙ ДАТЫ ---
+        function getLatestInputDate(channelFilter = 'all') {
+            if (!inputState || !monthsData || !monthsData.length) return null;
+
+            let maxDate = null;
+
+            for (const key in inputState) {
+                const val = inputState[key];
+                if (val === undefined || val === null || val === '') continue;
+
+                const match = key.match(/^smm_m(\d+)_c(\d+)_w(\d+)_d(\d+)_/);
+                if (!match) continue;
+
+                const mIdx = parseInt(match[1]);
+                const cIdx = parseInt(match[2]);
+                const wIdx = parseInt(match[3]);
+                const dIdx = parseInt(match[4]);
+
+                if (channelFilter !== 'all' && channelFilter !== `c${cIdx}`) continue;
+
+                const month = monthsData[mIdx];
+                if (!month) continue;
+
+                const { year, monthIndex } = getMonthYear(month);
+                const dayObj = month.weeks?.[wIdx]?.days?.[dIdx];
+                
+                if (!dayObj || !dayObj.num) continue;
+
+                const entryDate = new Date(year, monthIndex, Number(dayObj.num));
+
+                if (!maxDate || entryDate > maxDate) {
+                    maxDate = entryDate;
+                }
+            }
+
+            return maxDate;
+        }
+
+        function updateActualDateUI(channelFilter = 'all') {
+            const badge = document.getElementById('actual-date-badge');
+            const latestDate = getLatestInputDate(channelFilter);
+
+            if (latestDate) {
+                const dateStr = `${String(latestDate.getDate()).padStart(2, '0')}.${String(latestDate.getMonth() + 1).padStart(2, '0')}.${latestDate.getFullYear()}`;
+                badge.innerHTML = `Актуально на: <span class="text-slate-800">${dateStr}</span>`;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+        // --- КОНЕЦ НОВЫХ ФУНКЦИЙ ---
 
         function setInitialDates() {
             const today = new Date();
@@ -831,16 +887,16 @@
                 merged.err.errSimpleCount += part.err.errSimpleCount || 0;
 
                 Object.keys(part.err.byCErr || {}).forEach(cKey => {
-    if (!merged.err.byCErr[cKey]) {
-        merged.err.byCErr[cKey] = { weighted: 0, weight: 0, sum: 0, count: 0 };
-    }
-    
-    const pItem = part.err.byCErr[cKey];
-    merged.err.byCErr[cKey].weighted += pItem.weighted || 0;
-    merged.err.byCErr[cKey].weight += pItem.weight || 0;
-    merged.err.byCErr[cKey].sum += pItem.sum || 0;
-    merged.err.byCErr[cKey].count += pItem.count || 0;
-});
+                    if (!merged.err.byCErr[cKey]) {
+                        merged.err.byCErr[cKey] = { weighted: 0, weight: 0, sum: 0, count: 0 };
+                    }
+                    
+                    const pItem = part.err.byCErr[cKey];
+                    merged.err.byCErr[cKey].weighted += pItem.weighted || 0;
+                    merged.err.byCErr[cKey].weight += pItem.weight || 0;
+                    merged.err.byCErr[cKey].sum += pItem.sum || 0;
+                    merged.err.byCErr[cKey].count += pItem.count || 0;
+                });
 
             });
 
@@ -980,7 +1036,6 @@
                 smmCharts[id].destroy();
             }
 
-            // Фирменная палитра
             const defaultColors = [
                 '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
                 '#ec4899', '#06b6d4', '#84cc16', '#14b8a6', '#64748b'
@@ -990,7 +1045,6 @@
             const data = [];
             const backgroundColor = [];
 
-            // Берем названия каналов из последнего доступного месяца
             const latestMonthIndex = monthsData.length - 1;
 
             Object.keys(dataObj || {}).forEach(cKey => {
@@ -1019,7 +1073,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '70%', // Делаем тонкий стильный "бублик"
+                    cutout: '70%',
                     layout: { padding: 10 },
                     plugins: {
                         legend: {
@@ -1036,7 +1090,6 @@
                             formatter: (value, ctx) => {
                                 let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
                                 let percentage = (value * 100 / sum);
-                                // Скрываем проценты, если доля меньше 4%, чтобы не было каши
                                 return percentage > 4 ? percentage.toFixed(0) + "%" : "";
                             }
                         }
@@ -1097,91 +1150,88 @@
             });
         }
 
-function renderGlobalChart(id, labels, values, forecastValues, color, isPercent = false) {
-    const canvas = document.getElementById(id);
-    if (!canvas) return;
+        function renderGlobalChart(id, labels, values, forecastValues, color, isPercent = false) {
+            const canvas = document.getElementById(id);
+            if (!canvas) return;
 
-    if (smmCharts[id]) smmCharts[id].destroy();
+            if (smmCharts[id]) smmCharts[id].destroy();
 
-    // Считаем потолок для Y оси на основе полных (прогнозных) значений
-    const totals = values.map((v, i) => v + (forecastValues[i] || 0));
-    const maxValue = totals.length > 0 ? Math.max(...totals) : 0;
-    const topMargin = maxValue * 1.20;
+            const totals = values.map((v, i) => v + (forecastValues[i] || 0));
+            const maxValue = totals.length > 0 ? Math.max(...totals) : 0;
+            const topMargin = maxValue * 1.20;
 
-    smmCharts[id] = new Chart(canvas, {
-        type: 'bar',
-        data: {
-            labels,
-            datasets: [
-                {
-                    label: 'Факт',
-                    data: values,
-                    backgroundColor: color,
-                    // Если сверху есть прогноз, скругляем только низ. Иначе все углы.
-                    borderRadius: (ctx) => {
-                        const hasForecast = forecastValues[ctx.dataIndex] > 0;
-                        return hasForecast ? { topLeft: 0, topRight: 0, bottomLeft: 10, bottomRight: 10 } : 10;
-                    }
+            smmCharts[id] = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Факт',
+                            data: values,
+                            backgroundColor: color,
+                            borderRadius: (ctx) => {
+                                const hasForecast = forecastValues[ctx.dataIndex] > 0;
+                                return hasForecast ? { topLeft: 0, topRight: 0, bottomLeft: 10, bottomRight: 10 } : 10;
+                            }
+                        },
+                        {
+                            label: 'Прогноз',
+                            data: forecastValues,
+                            backgroundColor: '#e2e8f0', 
+                            borderRadius: { topLeft: 10, topRight: 10, bottomLeft: 0, bottomRight: 0 },
+                            borderSkipped: 'bottom'
+                        }
+                    ]
                 },
-                {
-                    label: 'Прогноз',
-                    data: forecastValues,
-                    backgroundColor: '#e2e8f0', // Бледно-серый цвет для прогноза
-                    borderRadius: { topLeft: 10, topRight: 10, bottomLeft: 0, bottomRight: 0 },
-                    borderSkipped: 'bottom'
-                }
-            ]
-        },
-        plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false // При наведении показываем и факт, и прогноз
-            },
-            layout: {
-                padding: { top: 20, right: 10, left: 10, bottom: 20 } 
-            },
-            plugins: {
-                legend: { display: false },
-                datalabels: {
-                    color: '#0f172a',
-                    anchor: 'end',
-                    align: 'top', 
-                    offset: 6,    
-                    font: { weight: 'bold', size: 11 },
-                    formatter: (value, context) => {
-                        const dataIdx = context.dataIndex;
-                        const hasForecast = forecastValues[dataIdx] > 0;
+                plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false 
+                    },
+                    layout: {
+                        padding: { top: 20, right: 10, left: 10, bottom: 20 } 
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            color: '#0f172a',
+                            anchor: 'end',
+                            align: 'top', 
+                            offset: 6,    
+                            font: { weight: 'bold', size: 11 },
+                            formatter: (value, context) => {
+                                const dataIdx = context.dataIndex;
+                                const hasForecast = forecastValues[dataIdx] > 0;
 
-                        // Оставляем только один лейбл над всем столбцом, скрываем у нижнего куска
-                        if (context.datasetIndex === 0 && hasForecast) return null;
+                                if (context.datasetIndex === 0 && hasForecast) return null;
 
-                        const total = values[dataIdx] + forecastValues[dataIdx];
-                        if (total === 0) return '';
-                        return isPercent ? total.toFixed(1) + '%' : formatNum(total);
+                                const total = values[dataIdx] + forecastValues[dataIdx];
+                                if (total === 0) return '';
+                                return isPercent ? total.toFixed(1) + '%' : formatNum(total);
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            stacked: true, 
+                            grid: { display: false },
+                            ticks: { padding: 5 }
+                        },
+                        y: {
+                            stacked: true, 
+                            beginAtZero: true,
+                            suggestedMax: topMargin, 
+                            ticks: {
+                                callback: v => isPercent ? v + '%' : v
+                            }
+                        }
                     }
                 }
-            },
-            scales: {
-                x: { 
-                    stacked: true, // Включаем наложение
-                    grid: { display: false },
-                    ticks: { padding: 5 }
-                },
-                y: {
-                    stacked: true, // Включаем наложение
-                    beginAtZero: true,
-                    suggestedMax: topMargin, 
-                    ticks: {
-                        callback: v => isPercent ? v + '%' : v
-                    }
-                }
-            }
+            });
         }
-    });
-}
 
         function processCurrentMonthData() {
             try {
@@ -1284,7 +1334,6 @@ function renderGlobalChart(id, labels, values, forecastValues, color, isPercent 
         function renderGlobalData() {
             if (!monthsData.length) return;
 
-            // 1. Обновляем селекты
             const channelEl = document.getElementById('global-channel');
             const currentChannel = channelEl.value || 'all';
             channelEl.innerHTML = '<option value="all">Все каналы</option>';
@@ -1302,10 +1351,8 @@ function renderGlobalChart(id, labels, values, forecastValues, color, isPercent 
             const activeChannel = channelEl.value;
             const grouping = document.getElementById('global-grouping').value;
 
-            // Переменные для группировки данных (по оси X)
             const groupedData = {};
 
-            // Переменные для общих итогов (Top Cards)
             let totalReach = 0;
             let totalLeads = 0;
             let totalSubs = 0;
@@ -1314,12 +1361,11 @@ function renderGlobalChart(id, labels, values, forecastValues, color, isPercent 
             let totalErrSimpleSum = 0;
             let totalErrSimpleCount = 0;
 
-            // Переменные для бубликов
             const pieReach = {};
             const pieLeads = {};
             const pieSubs = {};
 
-monthsData.forEach((m, mI) => {
+            monthsData.forEach((m, mI) => {
                 const { year, monthIndex } = getMonthYear(m);
                 if (!Number.isFinite(year) || monthIndex < 0) return;
 
@@ -1344,13 +1390,12 @@ monthsData.forEach((m, mI) => {
                     groupedData[groupKey] = { 
                         reach: 0, leads: 0, subs: 0, 
                         errWeighted: 0, errWeight: 0, errSimpleSum: 0, errSimpleCount: 0,
-                        fcstReach: 0, fcstLeads: 0, fcstSubs: 0 // Контейнеры для прогноза
+                        fcstReach: 0, fcstLeads: 0, fcstSubs: 0 
                     };
                 }
 
                 const data = extractSMMRangeMultiMonth(start, actualEnd, activeChannel);
 
-                // Расчет линейного прогноза для текущего незаконченного месяца
                 let fcstReach = 0, fcstLeads = 0, fcstSubs = 0;
                 
                 if (today >= start && today <= end) {
@@ -1358,7 +1403,6 @@ monthsData.forEach((m, mI) => {
                     const daysInMonth = end.getDate();
                     
                     if (daysPassed > 0 && daysPassed < daysInMonth) {
-                        // Множитель: остаток дней / прошедшие дни
                         const multiplier = (daysInMonth - daysPassed) / daysPassed;
                         fcstReach = data.reach.tot * multiplier;
                         fcstLeads = data.leads.tot * multiplier;
@@ -1394,7 +1438,6 @@ monthsData.forEach((m, mI) => {
 
             const labels = Object.keys(groupedData);
             
-            // Формируем массивы факта
             const arrReach = labels.map(k => groupedData[k].reach);
             const arrLeads = labels.map(k => groupedData[k].leads);
             const arrSubs = labels.map(k => groupedData[k].subs);
@@ -1405,11 +1448,10 @@ monthsData.forEach((m, mI) => {
                 return 0;
             });
 
-            // Формируем массивы прогноза
             const arrReachFcst = labels.map(k => groupedData[k].fcstReach);
             const arrLeadsFcst = labels.map(k => groupedData[k].fcstLeads);
             const arrSubsFcst = labels.map(k => groupedData[k].fcstSubs);
-            const arrErrFcst = labels.map(k => 0); // Для ERR прогноз не строится
+            const arrErrFcst = labels.map(k => 0); 
 
             document.getElementById('global-tot-reach').innerText = formatNum(totalReach);
             document.getElementById('global-tot-leads').innerText = formatNum(totalLeads);
@@ -1420,7 +1462,6 @@ monthsData.forEach((m, mI) => {
                 : (totalErrSimpleCount > 0 ? totalErrSimpleSum / totalErrSimpleCount : 0);
             document.getElementById('global-tot-err').innerText = formatPerc(finalErr);
 
-            // Отрисовываем графики (передаем новые массивы)
             renderGlobalChart('global-reach', labels, arrReach, arrReachFcst, '#8b5cf6');
             renderGlobalChart('global-leads', labels, arrLeads, arrLeadsFcst, '#3b82f6');
             renderGlobalChart('global-subs', labels, arrSubs, arrSubsFcst, '#10b981');
@@ -1435,15 +1476,18 @@ monthsData.forEach((m, mI) => {
             signInWithPopup(auth, provider);
         });
 
-        document.getElementById('current-channel').addEventListener('change', () => {
+        document.getElementById('current-channel').addEventListener('change', (e) => {
+            updateActualDateUI(e.target.value);
             processCurrentMonthData();
         });
-document.getElementById('global-channel').addEventListener('change', () => {
+        document.getElementById('global-channel').addEventListener('change', (e) => {
+            updateActualDateUI(e.target.value);
             renderGlobalData();
         });
         document.getElementById('global-grouping').addEventListener('change', () => {
             renderGlobalData();
         });
+
         onAuthStateChanged(auth, (user) => {
             if (!user) return;
 
@@ -1468,7 +1512,13 @@ document.getElementById('global-channel').addEventListener('change', () => {
                     : Object.values(data.monthsData || {});
 
                 document.getElementById('sync-status').innerText = 'Firebase: онлайн';
-                document.getElementById('sync-status').className = 'text-xs font-bold text-emerald-600 mt-1';
+                document.getElementById('sync-status').className = 'text-xs font-bold text-emerald-600';
+
+                const currentActiveChannel = currentTab === 'global' 
+                    ? (document.getElementById('global-channel').value || 'all')
+                    : (document.getElementById('current-channel').value || 'all');
+                
+                updateActualDateUI(currentActiveChannel);
 
                 if (currentTab === 'global') {
                     renderGlobalData();
