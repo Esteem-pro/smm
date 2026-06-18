@@ -648,9 +648,6 @@ function getLatestInputDate(channelFilter = 'all') {
 
     return leastUpdatedDate;
 }
-            return maxDate;
-        }
-
         function updateActualDateUI(channelFilter = 'all') {
             const badge = document.getElementById('actual-date-badge');
             const latestDate = getLatestInputDate(channelFilter);
