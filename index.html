@@ -590,40 +590,64 @@
         }
 
         // --- НОВЫЕ ФУНКЦИИ ДЛЯ РАСЧЕТА АКТУАЛЬНОЙ ДАТЫ ---
-        function getLatestInputDate(channelFilter = 'all') {
-            if (!inputState || !monthsData || !monthsData.length) return null;
+function getLatestInputDate(channelFilter = 'all') {
+    if (!inputState || !monthsData || !monthsData.length) return null;
 
-            let maxDate = null;
+    // Объект для хранения максимальной даты по каждому отдельному каналу
+    const channelMaxDates = {};
 
-            for (const key in inputState) {
-                const val = inputState[key];
-                if (val === undefined || val === null || val === '') continue;
+    for (const key in inputState) {
+        const val = inputState[key];
+        // Пропускаем пустые значения
+        if (val === undefined || val === null || val === '') continue;
 
-                const match = key.match(/^smm_m(\d+)_c(\d+)_w(\d+)_d(\d+)_/);
-                if (!match) continue;
+        const match = key.match(/^smm_m(\d+)_c(\d+)_w(\d+)_d(\d+)_/);
+        if (!match) continue;
 
-                const mIdx = parseInt(match[1]);
-                const cIdx = parseInt(match[2]);
-                const wIdx = parseInt(match[3]);
-                const dIdx = parseInt(match[4]);
+        const mIdx = parseInt(match[1]);
+        const cIdx = parseInt(match[2]);
+        const wIdx = parseInt(match[3]);
+        const dIdx = parseInt(match[4]);
 
-                if (channelFilter !== 'all' && channelFilter !== `c${cIdx}`) continue;
+        // Если фильтр стоит на конкретный канал, игнорируем остальные сразу
+        if (channelFilter !== 'all' && channelFilter !== `c${cIdx}`) continue;
 
-                const month = monthsData[mIdx];
-                if (!month) continue;
+        const month = monthsData[mIdx];
+        if (!month) continue;
 
-                const { year, monthIndex } = getMonthYear(month);
-                const dayObj = month.weeks?.[wIdx]?.days?.[dIdx];
-                
-                if (!dayObj || !dayObj.num) continue;
+        const { year, monthIndex } = getMonthYear(month);
+        const dayObj = month.weeks?.[wIdx]?.days?.[dIdx];
+        
+        if (!dayObj || !dayObj.num) continue;
 
-                const entryDate = new Date(year, monthIndex, Number(dayObj.num));
+        const entryDate = new Date(year, monthIndex, Number(dayObj.num));
+        const cKey = `c${cIdx}`;
 
-                if (!maxDate || entryDate > maxDate) {
-                    maxDate = entryDate;
-                }
-            }
+        // Обновляем максимальную дату для конкретного канала
+        if (!channelMaxDates[cKey] || entryDate > channelMaxDates[cKey]) {
+            channelMaxDates[cKey] = entryDate;
+        }
+    }
 
+    const activeChannels = Object.keys(channelMaxDates);
+    if (activeChannels.length === 0) return null;
+
+    // Если запрошен конкретный канал, просто отдаем его самую свежую дату
+    if (channelFilter !== 'all') {
+        return channelMaxDates[channelFilter] || null;
+    }
+
+    // Если выбраны "Все каналы", ищем наименее актуальный канал (МИНИМУМ из МАКСИМУМОВ)
+    let leastUpdatedDate = channelMaxDates[activeChannels[0]];
+    
+    for (let i = 1; i < activeChannels.length; i++) {
+        if (channelMaxDates[activeChannels[i]] < leastUpdatedDate) {
+            leastUpdatedDate = channelMaxDates[activeChannels[i]];
+        }
+    }
+
+    return leastUpdatedDate;
+}
             return maxDate;
         }
 
