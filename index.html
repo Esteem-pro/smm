@@ -828,7 +828,6 @@ function getLatestInputDate(channelFilter = 'all') {
                                 result.subs.tot += val;
                                 result.subs.byC[cKey] = (result.subs.byC[cKey] || 0) + val;
                                 result.subs.t[tIdx] += val;
-                            }
                             } else if (isVisitsMetric(metricName)) {
                                 result.visits.tot += val;
                                 result.visits.byC[cKey] = (result.visits.byC[cKey] || 0) + val;
