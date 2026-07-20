@@ -438,6 +438,17 @@
                         <span class="metric-title mb-4">ERR</span>
                         <canvas id="global-err"></canvas>
                     </div>
+                     <!-- Посещения профиля (Глобальная) -->
+                    <div id="global-card-profile-visits" class="bento-card h-[360px] hidden">
+                        <span class="metric-title mb-4 text-purple-600">Посещения профиля</span>
+                        <canvas id="global-visits"></canvas>
+                    </div>
+
+                    <!-- Дзен Дочитывания (Глобальная) -->
+                    <div id="global-card-dzen-metrics" class="bento-card h-[360px] hidden">
+                        <span class="metric-title mb-4 text-orange-600">Средний % дочитываний</span>
+                        <canvas id="global-dzen-reads"></canvas>
+                    </div>
                 </div>
             </div>
         </main>
@@ -1520,9 +1531,10 @@ const cName = channelFilter !== 'all' ? channelName(monthIndex, channelFilter).t
 
                 if (!groupedData[groupKey]) {
                     groupedData[groupKey] = { 
-                        reach: 0, leads: 0, subs: 0, 
+                        reach: 0, leads: 0, subs: 0,
+                        visits: 0, dzenReadsSum: 0, dzenReadsCount: 0,
                         errWeighted: 0, errWeight: 0, errSimpleSum: 0, errSimpleCount: 0,
-                        fcstReach: 0, fcstLeads: 0, fcstSubs: 0 
+                        fcstReach: 0, fcstLeads: 0, fcstSubs: 0, fcstVisits: 0
                     };
                 }
 
@@ -1545,15 +1557,20 @@ const cName = channelFilter !== 'all' ? channelName(monthIndex, channelFilter).t
                 groupedData[groupKey].reach += data.reach.tot;
                 groupedData[groupKey].leads += data.leads.tot;
                 groupedData[groupKey].subs += data.subs.tot;
+                groupedData[groupKey].visits += data.visits.tot;
                 
                 groupedData[groupKey].fcstReach += fcstReach;
                 groupedData[groupKey].fcstLeads += fcstLeads;
                 groupedData[groupKey].fcstSubs += fcstSubs;
+                groupedData[groupKey].fcstVisits += fcstVisits;
 
                 groupedData[groupKey].errWeighted += data.err.errWeighted;
                 groupedData[groupKey].errWeight += data.err.errWeight;
                 groupedData[groupKey].errSimpleSum += data.err.errSimpleSum;
                 groupedData[groupKey].errSimpleCount += data.err.errSimpleCount;
+
+                groupedData[groupKey].dzenReadsSum += data.dzenReads.errSimpleSum;
+                groupedData[groupKey].dzenReadsCount += data.dzenReads.errSimpleCount;
 
                 totalReach += data.reach.tot;
                 totalLeads += data.leads.tot;
@@ -1583,7 +1600,15 @@ const cName = channelFilter !== 'all' ? channelName(monthIndex, channelFilter).t
             const arrReachFcst = labels.map(k => groupedData[k].fcstReach);
             const arrLeadsFcst = labels.map(k => groupedData[k].fcstLeads);
             const arrSubsFcst = labels.map(k => groupedData[k].fcstSubs);
-            const arrErrFcst = labels.map(k => 0); 
+            const arrErrFcst = labels.map(k => 0);
+            const arrVisits = labels.map(k => groupedData[k].visits);
+            const arrVisitsFcst = labels.map(k => groupedData[k].fcstVisits);
+            
+            const arrDzenReads = labels.map(k => {
+                const g = groupedData[k];
+                return g.dzenReadsCount > 0 ? g.dzenReadsSum / g.dzenReadsCount : 0;
+            });
+            const arrDzenReadsFcst = labels.map(k => 0); // Прогноз для процентов не строим
 
             document.getElementById('global-tot-reach').innerText = formatNum(totalReach);
             document.getElementById('global-tot-leads').innerText = formatNum(totalLeads);
@@ -1602,6 +1627,27 @@ const cName = channelFilter !== 'all' ? channelName(monthIndex, channelFilter).t
             renderGlobalDoughnut('global-pie-reach', pieReach);
             renderGlobalDoughnut('global-pie-leads', pieLeads);
             renderGlobalDoughnut('global-pie-subs', pieSubs);
+            // Получаем название глобального канала
+            const activeChannelName = activeChannel !== 'all' ? channelName(monthsData.length - 1, activeChannel).toLowerCase() : '';
+            
+            const cardVisitsGlobal = document.getElementById('global-card-profile-visits');
+            const cardDzenGlobal = document.getElementById('global-card-dzen-metrics');
+
+            // Проверяем условия
+            const isInstaOrVkGlobal = activeChannelName.includes('инстаграм') || activeChannelName.includes('instagram') || activeChannelName.includes('вк') || activeChannelName.includes('vk');
+            const isDzenGlobal = activeChannelName.includes('дзен') || activeChannelName.includes('dzen');
+
+            // Переключаем классы
+            if (cardVisitsGlobal) cardVisitsGlobal.classList.toggle('hidden', !isInstaOrVkGlobal);
+            if (cardDzenGlobal) cardDzenGlobal.classList.toggle('hidden', !isDzenGlobal);
+
+            // Рисуем, если нужно
+            if (isInstaOrVkGlobal) {
+                renderGlobalChart('global-visits', labels, arrVisits, arrVisitsFcst, '#a855f7');
+            }
+            if (isDzenGlobal) {
+                renderGlobalChart('global-dzen-reads', labels, arrDzenReads, arrDzenReadsFcst, '#f97316', true);
+            }
         }
 
         document.getElementById('login-btn').addEventListener('click', () => {
