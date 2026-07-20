@@ -1540,7 +1540,7 @@ const cName = channelFilter !== 'all' ? channelName(monthIndex, channelFilter).t
 
                 const data = extractSMMRangeMultiMonth(start, actualEnd, activeChannel);
 
-                let fcstReach = 0, fcstLeads = 0, fcstSubs = 0;
+                let fcstReach = 0, fcstLeads = 0, fcstSubs = 0, fcstVisits = 0;
                 
                 if (today >= start && today <= end) {
                     const daysPassed = daysBetweenInclusive(start, actualEnd);
