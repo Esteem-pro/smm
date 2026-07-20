@@ -324,7 +324,42 @@
                             </div>
                         </div>
                     </div>
+<!-- ДИНАМИЧЕСКАЯ КАРТОЧКА: Посещения профиля (Instagram / ВК) -->
+<div id="card-profile-visits" class="bento-card hidden flex-col lg:flex-row gap-6 p-6">
+    <div class="flex-1 min-w-[220px] flex flex-col">
+        <span class="metric-title flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-purple-500 block"></span>
+            Посещения профиля
+        </span>
+        <div class="metric-value text-purple-600 mt-1" id="val-visits">0</div>
+        <div class="mt-auto w-full" id="diff-visits"></div>
+    </div>
+    <div class="flex-[3] relative min-h-[190px]">
+        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
+        <div class="w-full h-[165px] relative">
+            <canvas id="line-visits"></canvas>
+        </div>
+    </div>
+</div>
 
+<!-- ДИНАМИЧЕСКАЯ КАРТОЧКА: Метрики Дзен (% Дочитываний) -->
+<!-- Примечание: "Просмотры" уже считаются в самом верхнем блоке "Суммарный охват / показы / просмотры" -->
+<div id="card-dzen-metrics" class="bento-card hidden flex-col lg:flex-row gap-6 p-6">
+    <div class="flex-1 min-w-[220px] flex flex-col">
+        <span class="metric-title flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-orange-500 block"></span>
+            Средний % дочитываний
+        </span>
+        <div class="metric-value text-orange-600 mt-1" id="val-dzen-reads">0%</div>
+        <div class="mt-auto w-full" id="diff-dzen-reads"></div>
+    </div>
+    <div class="flex-[3] relative min-h-[190px]">
+        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Динамика по дням</span>
+        <div class="w-full h-[165px] relative">
+            <canvas id="line-dzen-reads"></canvas>
+        </div>
+    </div>
+</div>
                 </div>
             </div>
         </main>
@@ -564,6 +599,14 @@
         function isLeadMetric(name) {
             return String(name || '').toLowerCase().includes('лиды');
         }
+function isVisitsMetric(name) {
+    return String(name || '').toLowerCase().includes('посещения профиля');
+}
+
+function isDzenReadsMetric(name) {
+    const s = String(name || '').toLowerCase();
+    return s.includes('дочитывани');
+}
 
         function isSubsMetric(name) {
             const s = String(name || '').toLowerCase();
@@ -732,7 +775,9 @@ function getLatestInputDate(channelFilter = 'all') {
                 reach: initMetricBucket(dayCount),
                 leads: initMetricBucket(dayCount),
                 subs: initMetricBucket(dayCount),
-                err: initMetricBucket(dayCount)
+                err: initMetricBucket(dayCount),
+                visits: initMetricBucket(dayCount),
+                dzenReads: initMetricBucket(dayCount)
             };
 
             const month = monthsData[monthIndex];
@@ -783,6 +828,16 @@ function getLatestInputDate(channelFilter = 'all') {
                                 result.subs.tot += val;
                                 result.subs.byC[cKey] = (result.subs.byC[cKey] || 0) + val;
                                 result.subs.t[tIdx] += val;
+                            }
+                            } else if (isVisitsMetric(metricName)) {
+                                result.visits.tot += val;
+                                result.visits.byC[cKey] = (result.visits.byC[cKey] || 0) + val;
+                                result.visits.t[tIdx] += val;
+                            } else if (isDzenReadsMetric(metricName)) {
+                                result.dzenReads.errSimpleSum += val;
+                                result.dzenReads.errSimpleCount += 1;
+                                result.dzenReads.t[tIdx] += val;
+                                result.dzenReads.t[tIdx + '_count'] = (result.dzenReads.t[tIdx + '_count'] || 0) + 1;
                             }
                         });
 
@@ -844,7 +899,14 @@ function getLatestInputDate(channelFilter = 'all') {
 
                 return 0;
             });
+ result.dzenReads.tot = result.dzenReads.errSimpleCount > 0 
+                ? result.dzenReads.errSimpleSum / result.dzenReads.errSimpleCount 
+                : 0;
 
+            result.dzenReads.t = result.dzenReads.t.map((v, i) => {
+                const count = result.dzenReads.t[i + '_count'] || 0;
+                return count > 0 ? v / count : 0;
+            });
             return result;
         }
 
@@ -862,7 +924,9 @@ function getLatestInputDate(channelFilter = 'all') {
                 reach: initMetricBucket(dayCount),
                 leads: initMetricBucket(dayCount),
                 subs: initMetricBucket(dayCount),
-                err: initMetricBucket(dayCount)
+                err: initMetricBucket(dayCount),
+                visits: initMetricBucket(dayCount),
+                dzenReads: initMetricBucket(dayCount)
             };
 
             monthsData.forEach((month, monthIndex) => {
@@ -892,9 +956,11 @@ function getLatestInputDate(channelFilter = 'all') {
                     merged.leads.t[globalIdx] += part.leads.t[localIdx] || 0;
                     merged.subs.t[globalIdx] += part.subs.t[localIdx] || 0;
                     merged.err.t[globalIdx] = part.err.t[localIdx] || merged.err.t[globalIdx] || 0;
+                    merged.visits.t[globalIdx] += part.visits.t[localIdx] || 0;
+                    merged.dzenReads.t[globalIdx] = part.dzenReads.t[localIdx] || merged.dzenReads.t[globalIdx] || 0;
                 });
 
-                ['reach', 'leads', 'subs'].forEach(metric => {
+               ['reach', 'leads', 'subs', 'visits'].forEach(metric => {
                     merged[metric].tot += part[metric].tot || 0;
 
                     Object.keys(part[metric].byC || {}).forEach(cKey => {
@@ -906,6 +972,8 @@ function getLatestInputDate(channelFilter = 'all') {
                 merged.err.errWeight += part.err.errWeight || 0;
                 merged.err.errSimpleSum += part.err.errSimpleSum || 0;
                 merged.err.errSimpleCount += part.err.errSimpleCount || 0;
+                merged.dzenReads.errSimpleSum += part.dzenReads.errSimpleSum || 0;
+                merged.dzenReads.errSimpleCount += part.dzenReads.errSimpleCount || 0;
 
                 Object.keys(part.err.byCErr || {}).forEach(cKey => {
                     if (!merged.err.byCErr[cKey]) {
@@ -932,7 +1000,9 @@ function getLatestInputDate(channelFilter = 'all') {
             merged.err.tot = merged.err.errWeight > 0
                 ? merged.err.errWeighted / merged.err.errWeight
                 : (merged.err.errSimpleCount > 0 ? merged.err.errSimpleSum / merged.err.errSimpleCount : 0);
-
+merged.dzenReads.tot = merged.dzenReads.errSimpleCount > 0
+                ? merged.dzenReads.errSimpleSum / merged.dzenReads.errSimpleCount
+                : 0;
             return merged;
         }
 
@@ -1345,6 +1415,48 @@ function getLatestInputDate(channelFilter = 'all') {
                 );
                 renderPie('pie-err', current.err.byC, monthIndex, true);
                 renderLine('line-err', current.labels, current.err.t, '#64748b', true);
+const cName = channelFilter !== 'all' ? channelName(monthIndex, channelFilter).toLowerCase() : '';
+                
+                const cardVisits = document.getElementById('card-profile-visits');
+                const cardDzen = document.getElementById('card-dzen-metrics');
+
+                // Определяем, нужно ли показывать карточки на основе названия канала
+                const isInstaOrVk = cName.includes('инстаграм') || cName.includes('instagram') || cName.includes('вк') || cName.includes('vk');
+                const isDzen = cName.includes('дзен') || cName.includes('dzen');
+
+                // Переключаем видимость (Tailwind класс 'hidden')
+                if (cardVisits) cardVisits.classList.toggle('hidden', !isInstaOrVk);
+                if (cardDzen) cardDzen.classList.toggle('hidden', !isDzen);
+
+                // Отрисовываем график Посещений (только если выбрана Инста или ВК)
+                if (isInstaOrVk) {
+                    document.getElementById('val-visits').innerText = formatNum(current.visits.tot);
+                    document.getElementById('diff-visits').innerHTML = getCompareBadge(
+                        current.visits.tot,
+                        prev?.visits?.tot,
+                        currentDays,
+                        prevDays,
+                        false, // false, так как это не проценты
+                        compareLabel
+                    );
+                    // Рисуем фиолетовый график
+                    renderLine('line-visits', current.labels, current.visits.t, '#a855f7'); 
+                }
+
+                // Отрисовываем график Дочитываний (только если выбран Дзен)
+                if (isDzen) {
+                    document.getElementById('val-dzen-reads').innerText = formatPerc(current.dzenReads.tot);
+                    document.getElementById('diff-dzen-reads').innerHTML = getCompareBadge(
+                        current.dzenReads.tot,
+                        prev?.dzenReads?.tot,
+                        currentDays,
+                        prevDays,
+                        true, // true, так как это проценты
+                        compareLabel
+                    );
+                    // Рисуем оранжевый график
+                    renderLine('line-dzen-reads', current.labels, current.dzenReads.t, '#f97316', true); 
+                }
 
             } catch (error) {
                 showError(`Критическая ошибка расчетов: ${error.message}`);
